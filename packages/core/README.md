@@ -47,4 +47,4 @@ Summand Pro reads invoices into typed objects, renders them as readable HTML wit
 
 ## Licence
 
-MIT for Summand's code. The bundled rule sets keep their licences (EN 16931 artefacts: EUPL-1.2, XRechnung Schematron: Apache-2.0), see [NOTICE.md](packages/core/NOTICE.md).
+MIT for Summand's code. The bundled rule sets keep their licences (EN 16931 artefacts: EUPL-1.2, XRechnung Schematron: Apache-2.0), see [NOTICE.md](NOTICE.md).

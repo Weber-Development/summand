@@ -1,0 +1,28 @@
+{
+  "sections": [
+    {
+      "label": "Start",
+      "items": ["introduction", "getting-started"]
+    },
+    {
+      "label": "Guides",
+      "items": [
+        "guides/validate",
+        "guides/profiles",
+        "guides/pdf",
+        "guides/browser",
+        "guides/cli",
+        "guides/leitweg-id",
+        "guides/schematron"
+      ]
+    },
+    {
+      "label": "Pro",
+      "items": ["pro/overview"]
+    },
+    {
+      "label": "Reference",
+      "items": ["reference/api", "reference/rule-sets"]
+    }
+  ]
+}

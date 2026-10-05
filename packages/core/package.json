@@ -1,0 +1,100 @@
+{
+  "name": "@sweberdev/summand",
+  "version": "0.0.0",
+  "description": "Validate XRechnung and ZUGFeRD/Factur-X e-invoices against EN 16931 in pure TypeScript: the official CEN and KoSIT Schematron rules, UBL and CII, PDF extraction, CLI. Runs in Node and the browser, no Java.",
+  "license": "MIT",
+  "author": "Seya Weber (https://github.com/sxwxbxr)",
+  "homepage": "https://packages.sweber.dev/summand/docs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Weber-Development/summand.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/Weber-Development/summand/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./xpath": {
+      "import": {
+        "types": "./dist/xpath.d.ts",
+        "default": "./dist/xpath.js"
+      },
+      "require": {
+        "types": "./dist/xpath.d.cts",
+        "default": "./dist/xpath.cjs"
+      }
+    },
+    "./cli": {
+      "import": {
+        "types": "./dist/cli.d.ts",
+        "default": "./dist/cli.js"
+      },
+      "require": {
+        "types": "./dist/cli.d.cts",
+        "default": "./dist/cli.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "summand": "./dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE",
+    "NOTICE.md"
+  ],
+  "keywords": [
+    "e-invoice",
+    "einvoice",
+    "e-rechnung",
+    "xrechnung",
+    "zugferd",
+    "factur-x",
+    "en16931",
+    "ubl",
+    "cii",
+    "peppol",
+    "schematron",
+    "xpath",
+    "validator",
+    "kosit"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json",
+    "rules": "tsx scripts/build-rules.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.3"
+  }
+}
