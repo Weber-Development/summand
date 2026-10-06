@@ -5,11 +5,15 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { compileSchematron } from "../src/schematron";
+import { compileSchematron, type MessagePart } from "../src/schematron";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path: string) => readFileSync(join(root, "rules-src", path), "utf8");
 const common = read("xrechnung/common.sch");
+// German messages, keyed by the English message with value parts replaced by {0}, {1}, ...
+const de: Record<string, string> = JSON.parse(read("i18n/de.json"));
+let translated = 0;
+let untranslated = 0;
 
 const sets = [
   { id: "en16931-ubl", file: "en16931/EN16931-UBL-validation-preprocessed.sch" },
@@ -31,6 +35,26 @@ for (const { id, file } of sets) {
         a.message = a.message.map((part) =>
           typeof part === "string" ? part.replace(/\s+/g, " ") : part,
         );
+        const values = a.message.filter((part) => typeof part !== "string");
+        let i = 0;
+        const key = a.message
+          .map((part) => (typeof part === "string" ? part : `{${i++}}`))
+          .join("")
+          .replace(/\s+/g, " ")
+          .trim();
+        const german = de[key];
+        if (german) {
+          a.messageDe = german
+            .split(/(\{\d+\})/)
+            .filter((part) => part !== "")
+            .map((part) => {
+              const m = /^\{(\d+)\}$/.exec(part);
+              return m ? (values[Number(m[1])] as MessagePart) : part;
+            });
+          translated++;
+        } else {
+          untranslated++;
+        }
       }
     }
   }
@@ -41,3 +65,6 @@ for (const { id, file } of sets) {
   writeFileSync(join(root, "src/rules", `${id}.json`), `${JSON.stringify(set)}\n`);
   console.log(`${id}: ${count} assertions`);
 }
+console.log(
+  `German messages: ${translated} translated, ${untranslated} kept (already German or new)`,
+);

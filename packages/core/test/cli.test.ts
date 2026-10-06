@@ -25,6 +25,14 @@ describe("cli", () => {
     expect(bad.out).toContain("SUM-FORMAT");
   });
 
+  it("prints German output with --lang de", async () => {
+    const ok = await run(["validate", "--lang", "de", valid]);
+    expect(ok.out).toMatch(/^gültig {3}.*0 Fehler, 0 Warnung\(en\)/m);
+    const bad = await run(["validate", "--lang", "fr", valid]);
+    expect(bad.code).toBe(1);
+    expect(bad.err).toContain("--lang de");
+  });
+
   it("prints JSON lines", async () => {
     const r = await run(["validate", "--json", valid]);
     expect(JSON.parse(r.out)).toMatchObject({ valid: true, profile: { id: "xrechnung" } });
