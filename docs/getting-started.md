@@ -40,6 +40,7 @@ A result looks like this:
   "profile": { "id": "xrechnung", "label": "XRechnung 3.0", "en16931": true },
   "source": { "type": "pdf", "attachmentName": "factur-x.xml", "pdfConformanceLevel": "XRECHNUNG" },
   "ruleSets": [{ "id": "en16931-cii", "version": "1.3.16" }, { "id": "xrechnung-cii", "version": "2.6.0" }],
+  "schemas": [{ "id": "cii-d16b", "version": "100.D16B" }],
   "errors": [
     {
       "id": "BR-DE-15",

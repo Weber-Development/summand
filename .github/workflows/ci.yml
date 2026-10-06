@@ -26,3 +26,5 @@ jobs:
       - run: pnpm check:packages
       - name: Compiled rule sets are up to date
         run: pnpm rules && git diff --exit-code packages/core/src/rules
+      - name: Compiled schemas are up to date
+        run: pnpm schemas && git diff --exit-code packages/core/src/schemas

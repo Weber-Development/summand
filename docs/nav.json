@@ -9,6 +9,7 @@
       "items": [
         "guides/validate",
         "guides/profiles",
+        "guides/schema",
         "guides/pdf",
         "guides/browser",
         "guides/cli",

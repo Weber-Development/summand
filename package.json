@@ -14,6 +14,7 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "rules": "pnpm --filter @sweberdev/summand run rules",
+    "schemas": "pnpm --filter @sweberdev/summand run schemas",
     "changeset": "changeset",
     "release": "pnpm build && pnpm check:packages && changeset publish"
   },

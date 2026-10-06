@@ -2,14 +2,19 @@ import { type Detection, detect, type Profile, type Syntax } from "./detect";
 import { isValidLeitwegId, looksLikeLeitwegId } from "./leitweg";
 import { extractInvoiceXml, isPdf, PdfError } from "./pdf";
 import { RULE_SETS, type RuleSetId, type RuleSetInfo, ruleSet } from "./rules/index";
+import { SCHEMAS, type SchemaId, type SchemaInfo } from "./schemas/index";
 import { runSchematron } from "./schematron";
 import { type InvoiceSummary, summarize } from "./summary";
 import { parseXml, XmlError, type XNode } from "./xml";
+import { validateSchema } from "./xsd";
 
 export type Severity = "error" | "warning" | "info";
 
 export interface ValidationMessage {
-  /** Rule id, e.g. "BR-CO-10", "BR-DE-15", or "SUM-…" for Summand's own checks. */
+  /**
+   * Rule id, e.g. "BR-CO-10", "BR-DE-15", or "SUM-…" for Summand's own checks ("SUM-XSD" for XML
+   * Schema violations).
+   */
   id: string;
   severity: Severity;
   message: string;
@@ -37,6 +42,8 @@ export interface ValidationResult {
   };
   /** Rule sets that were applied, with versions. */
   ruleSets: RuleSetInfo[];
+  /** XML Schemas the invoice was validated against (empty with `schema: false`). */
+  schemas: SchemaInfo[];
   errors: ValidationMessage[];
   warnings: ValidationMessage[];
   infos: ValidationMessage[];
@@ -56,6 +63,12 @@ export interface ValidateOptions {
   xrechnung?: boolean;
   /** Check a Leitweg-ID in the buyer reference (BT-10). Default true. */
   leitwegId?: boolean;
+  /**
+   * Validate against the XML Schema of the syntax (UBL 2.1 or UN/CEFACT CII D16B) before the
+   * Schematron rules, like the KoSIT validator. Violations are errors with the id "SUM-XSD".
+   * Default true.
+   */
+  schema?: boolean;
   /** Include the invoice XML in the result. Default false. */
   includeXml?: boolean;
   /**
@@ -235,6 +248,7 @@ export function validateInvoice(
   const base: Omit<ValidationResult, "valid" | "durationMs"> = {
     source: { type: "xml" },
     ruleSets: [],
+    schemas: [],
     errors: [],
     warnings: [],
     infos: [],
@@ -333,6 +347,17 @@ export function validateInvoice(
   base.syntax = detection.syntax;
   base.profile = detection.profile;
   base.summary = summarize(doc, detection.syntax);
+
+  if (options.schema !== false) {
+    // Schema errors do not stop the Schematron checks: like the KoSIT validator, both are reported.
+    const schemaId: SchemaId = detection.syntax === "cii" ? "cii-d16b" : "ubl-2.1";
+    base.schemas.push(SCHEMAS[schemaId]);
+    for (const f of validateSchema(doc, schemaId, de ? { lang: "de" } : {})) {
+      base.errors.push(
+        summandMessage("SUM-XSD", "error", f.message, { location: f.location, line: f.line }),
+      );
+    }
+  }
 
   if (!detection.profile.en16931) {
     base.errors.push(
