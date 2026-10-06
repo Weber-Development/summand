@@ -18,11 +18,13 @@ description: All exports of @sweberdev/summand, @sweberdev/summand/xpath and @sw
 | `isPdf(bytes)` | Whether bytes are a PDF |
 | `isValidLeitwegId(id)`, `parseLeitwegId(id)`, `leitwegCheckDigits(coarse, fine?)` | Leitweg-ID helpers |
 | `RULE_SETS`, `ruleSet(id)` | Bundled rule sets (metadata and compiled rules) |
+| `validateSchema(doc, schema)` | Validates a parsed document against `"ubl-2.1"`, `"cii-d16b"` or a compiled `SchemaModel`. Returns `SchemaFinding[]` (`kind`, `message`, `location`, `line`). |
+| `SCHEMAS` | Bundled XML Schemas (metadata) |
 | `compileSchematron(source, { id, includes? })` | Compiles a Schematron schema to a JSON rule set |
 | `runSchematron(set, doc, options?)` | Runs a rule set against a parsed document |
 | `parseXml(text)`, `stringValue(node)`, `nodePath(node)`, `XmlError` | XML parser |
 
-Types: `ValidationResult`, `ValidationMessage`, `ValidateOptions`, `Severity`, `InvoiceInput`, `Profile`, `ProfileId`, `Syntax`, `Detection`, `InvoiceSummary`, `PdfInfo`, `EmbeddedFile`, `RuleSetId`, `RuleSetInfo`, `CompiledRuleSet`, `SchematronFinding`, `Flag`, `RunOptions`, `XNode`, `LeitwegId`.
+Types: `ValidationResult`, `ValidationMessage`, `ValidateOptions`, `Severity`, `InvoiceInput`, `Profile`, `ProfileId`, `Syntax`, `Detection`, `InvoiceSummary`, `PdfInfo`, `EmbeddedFile`, `RuleSetId`, `RuleSetInfo`, `SchemaId`, `SchemaInfo`, `SchemaFinding`, `SchemaFindingKind`, `SchemaModel`, `CompiledRuleSet`, `SchematronFinding`, `Flag`, `RunOptions`, `XNode`, `LeitwegId`.
 
 ## @sweberdev/summand/xpath
 

@@ -30,6 +30,7 @@ The exit code is 1 when at least one invoice is invalid, so it can guard a CI st
 | `--json` | One JSON result per line (JSON Lines) |
 | `--xrechnung` | Apply XRechnung rules to every invoice |
 | `--strict-extended` | EXTENDED: EN 16931 violations are errors |
+| `--no-schema` | Skip the XML Schema (XSD) check |
 | `--warnings-as-errors` | Exit 1 on warnings too |
 | `--quiet` | Only the summary line per file |
 

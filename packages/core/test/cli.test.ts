@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -28,6 +28,22 @@ describe("cli", () => {
   it("prints JSON lines", async () => {
     const r = await run(["validate", "--json", valid]);
     expect(JSON.parse(r.out)).toMatchObject({ valid: true, profile: { id: "xrechnung" } });
+  });
+
+  it("reports schema errors and skips them with --no-schema", async () => {
+    const file = join(mkdtempSync(join(tmpdir(), "summand-")), "invoice.xml");
+    writeFileSync(
+      file,
+      readFileSync(valid, "utf8").replace(
+        "<cbc:IssueDate>2016-04-04<",
+        "<cbc:IssueDate>04.04.2016<",
+      ),
+    );
+    const checked = await run(["validate", file]);
+    expect(checked.code).toBe(1);
+    expect(checked.out).toContain("SUM-XSD (line 8)");
+    const skipped = await run(["validate", "--no-schema", file]);
+    expect(skipped.out).not.toContain("SUM-XSD");
   });
 
   it("extracts the XML from a PDF", async () => {

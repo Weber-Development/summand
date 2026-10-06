@@ -20,6 +20,7 @@ validate options
   --json                one JSON result per file (JSON Lines)
   --xrechnung           apply the XRechnung rules even if the invoice does not declare XRechnung
   --strict-extended     treat EN 16931 violations in ZUGFeRD EXTENDED as errors
+  --no-schema           skip the XML Schema (XSD) validation
   --warnings-as-errors  exit 1 when there are warnings
   --quiet               only print a summary line per file
 
@@ -70,6 +71,7 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
       json: { type: "boolean" },
       xrechnung: { type: "boolean" },
       "strict-extended": { type: "boolean" },
+      "no-schema": { type: "boolean" },
       "warnings-as-errors": { type: "boolean" },
       quiet: { type: "boolean" },
     },
@@ -84,6 +86,7 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
     const result = validateInvoice(bytes, {
       ...(values.xrechnung ? { xrechnung: true } : {}),
       ...(values["strict-extended"] ? { extended: "strict" as const } : {}),
+      ...(values["no-schema"] ? { schema: false } : {}),
     });
     if (!result.valid || (values["warnings-as-errors"] && result.warnings.length > 0))
       failed = true;

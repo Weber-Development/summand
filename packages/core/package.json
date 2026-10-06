@@ -1,7 +1,7 @@
 {
   "name": "@sweberdev/summand",
   "version": "0.1.0",
-  "description": "Validate XRechnung and ZUGFeRD/Factur-X e-invoices against EN 16931 in pure TypeScript: the official CEN and KoSIT Schematron rules, UBL and CII, PDF extraction, CLI. Runs in Node and the browser, no Java.",
+  "description": "Validate XRechnung and ZUGFeRD/Factur-X e-invoices against EN 16931 in pure TypeScript: UBL and CII XML Schema plus the official CEN and KoSIT Schematron rules, PDF extraction, CLI. Runs in Node and the browser, no Java.",
   "license": "MIT",
   "author": "Seya Weber (https://github.com/sxwxbxr)",
   "homepage": "https://packages.sweber.dev/summand/docs",
@@ -73,6 +73,7 @@
     "cii",
     "peppol",
     "schematron",
+    "xsd",
     "xpath",
     "validator",
     "kosit"
@@ -88,7 +89,8 @@
     "build": "tsup",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json",
-    "rules": "tsx scripts/build-rules.ts"
+    "rules": "tsx scripts/build-rules.ts",
+    "schemas": "tsx scripts/build-schemas.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

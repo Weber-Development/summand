@@ -36,3 +36,12 @@ export {
   validateInvoice,
 } from "./validate";
 export { nodePath, parseXml, stringValue, XmlError, type XNode } from "./xml";
+export {
+  SCHEMAS,
+  type SchemaFinding,
+  type SchemaFindingKind,
+  type SchemaId,
+  type SchemaInfo,
+  validateSchema,
+} from "./xsd";
+export type { SchemaModel } from "./xsd-model";

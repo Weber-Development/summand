@@ -13,7 +13,9 @@
       "!**/.astro",
       "!**/test/fixtures",
       "!**/src/rules/*.json",
-      "!**/rules-src"
+      "!**/src/schemas/*.json",
+      "!**/rules-src",
+      "!**/schemas-src"
     ]
   },
   "formatter": {
