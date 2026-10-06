@@ -64,6 +64,11 @@ export interface ValidateOptions {
    * warnings. "strict" keeps them as errors.
    */
   extended?: "lenient" | "strict";
+  /**
+   * Language of the messages: "en" (default) or "de". German covers all EN 16931 rules and
+   * Summand's own checks; the XRechnung rules are German in the original.
+   */
+  lang?: "en" | "de";
 }
 
 export type InvoiceInput = string | Uint8Array | ArrayBuffer;
@@ -219,6 +224,8 @@ export function validateInvoice(
   options: ValidateOptions = {},
 ): ValidationResult {
   const started = now();
+  const de = options.lang === "de";
+  const tr = (en: string, german: string) => (de ? german : en);
   const bytes =
     typeof input === "string"
       ? undefined
@@ -241,7 +248,16 @@ export function validateInvoice(
       extracted = extractInvoiceXml(bytes);
     } catch (e) {
       const message = e instanceof PdfError ? e.message : String(e);
-      base.errors.push(summandMessage("SUM-PDF", "error", `The PDF could not be read: ${message}`));
+      base.errors.push(
+        summandMessage(
+          "SUM-PDF",
+          "error",
+          tr(
+            `The PDF could not be read: ${message}`,
+            `Das PDF konnte nicht gelesen werden: ${message}`,
+          ),
+        ),
+      );
       return finish(base, started);
     }
     if (!extracted) {
@@ -249,7 +265,10 @@ export function validateInvoice(
         summandMessage(
           "SUM-PDF",
           "error",
-          "The PDF contains no embedded invoice XML. A ZUGFeRD / Factur-X invoice must embed the XML (for example factur-x.xml); a plain PDF is not an e-invoice.",
+          tr(
+            "The PDF contains no embedded invoice XML. A ZUGFeRD / Factur-X invoice must embed the XML (for example factur-x.xml); a plain PDF is not an e-invoice.",
+            "Das PDF enthält keine eingebettete Rechnungs-XML. Eine ZUGFeRD- / Factur-X-Rechnung muss die XML einbetten (zum Beispiel factur-x.xml); ein reines PDF ist keine E-Rechnung.",
+          ),
         ),
       );
       return finish(base, started);
@@ -269,9 +288,17 @@ export function validateInvoice(
   } catch (e) {
     if (!(e instanceof XmlError)) throw e;
     base.errors.push(
-      summandMessage("SUM-XML", "error", `The invoice is not well-formed XML: ${e.message}`, {
-        line: e.line,
-      }),
+      summandMessage(
+        "SUM-XML",
+        "error",
+        tr(
+          `The invoice is not well-formed XML: ${e.message}`,
+          `Die Rechnung ist kein wohlgeformtes XML: ${e.message}`,
+        ),
+        {
+          line: e.line,
+        },
+      ),
     );
     return finish(base, started);
   }
@@ -282,7 +309,10 @@ export function validateInvoice(
       summandMessage(
         "SUM-FORMAT",
         "error",
-        "ZUGFeRD 1.0 is not supported and does not comply with EN 16931. Use ZUGFeRD 2.x / Factur-X or XRechnung.",
+        tr(
+          "ZUGFeRD 1.0 is not supported and does not comply with EN 16931. Use ZUGFeRD 2.x / Factur-X or XRechnung.",
+          "ZUGFeRD 1.0 wird nicht unterstützt und entspricht nicht der EN 16931. Verwenden Sie ZUGFeRD 2.x / Factur-X oder XRechnung.",
+        ),
       ),
     );
     return finish(base, started);
@@ -292,7 +322,10 @@ export function validateInvoice(
       summandMessage(
         "SUM-FORMAT",
         "error",
-        "The document is not an e-invoice: expected a UBL Invoice, UBL CreditNote or UN/CEFACT CrossIndustryInvoice root element.",
+        tr(
+          "The document is not an e-invoice: expected a UBL Invoice, UBL CreditNote or UN/CEFACT CrossIndustryInvoice root element.",
+          "Das Dokument ist keine E-Rechnung: Erwartet wird ein Wurzelelement UBL Invoice, UBL CreditNote oder UN/CEFACT CrossIndustryInvoice.",
+        ),
       ),
     );
     return finish(base, started);
@@ -306,7 +339,10 @@ export function validateInvoice(
       summandMessage(
         "SUM-PROFILE",
         "error",
-        `${detection.profile.label} does not contain all information EN 16931 requires. It is not an e-invoice under EN 16931 (and not under § 14 UStG in Germany); use the EN 16931, BASIC, EXTENDED or XRechnung profile.`,
+        tr(
+          `${detection.profile.label} does not contain all information EN 16931 requires. It is not an e-invoice under EN 16931 (and not under § 14 UStG in Germany); use the EN 16931, BASIC, EXTENDED or XRechnung profile.`,
+          `${detection.profile.label} enthält nicht alle Angaben, die die EN 16931 verlangt. Es ist keine E-Rechnung nach EN 16931 (und in Deutschland nicht nach § 14 UStG); verwenden Sie das Profil EN 16931, BASIC, EXTENDED oder XRechnung.`,
+        ),
       ),
     );
   } else if (detection.profile.id === "unknown") {
@@ -315,8 +351,14 @@ export function validateInvoice(
         "SUM-PROFILE",
         "warning",
         detection.profile.specificationId
-          ? `Unknown specification identifier (BT-24) "${detection.profile.specificationId}"; validated against EN 16931 only.`
-          : "The specification identifier (BT-24) is missing; validated against EN 16931 only.",
+          ? tr(
+              `Unknown specification identifier (BT-24) "${detection.profile.specificationId}"; validated against EN 16931 only.`,
+              `Unbekannte Spezifikationskennung (BT-24) "${detection.profile.specificationId}"; nur gegen EN 16931 geprüft.`,
+            )
+          : tr(
+              "The specification identifier (BT-24) is missing; validated against EN 16931 only.",
+              "Die Spezifikationskennung (BT-24) fehlt; nur gegen EN 16931 geprüft.",
+            ),
       ),
     );
   }
@@ -333,13 +375,16 @@ export function validateInvoice(
       summandMessage(
         "SUM-EXTENDED",
         "info",
-        'ZUGFeRD / Factur-X EXTENDED may contain information beyond EN 16931. EN 16931 rule violations are reported as warnings; validate with extended: "strict" to treat them as errors.',
+        tr(
+          'ZUGFeRD / Factur-X EXTENDED may contain information beyond EN 16931. EN 16931 rule violations are reported as warnings; validate with extended: "strict" to treat them as errors.',
+          'ZUGFeRD / Factur-X EXTENDED darf Angaben über die EN 16931 hinaus enthalten. Verstöße gegen EN-16931-Regeln werden als Warnungen gemeldet; mit extended: "strict" gelten sie als Fehler.',
+        ),
       ),
     );
   }
   for (const id of ids) {
     base.ruleSets.push(RULE_SETS[id]);
-    for (const f of runSchematron(ruleSet(id), doc)) {
+    for (const f of runSchematron(ruleSet(id), doc, de ? { lang: "de" } : {})) {
       let severity: Severity =
         overrides[f.id] ??
         (f.flag === "warning" ? "warning" : f.flag === "information" ? "info" : "error");
@@ -373,7 +418,10 @@ export function validateInvoice(
       summandMessage(
         "SUM-LEITWEG",
         "warning",
-        `The buyer reference (BT-10) "${reference}" looks like a Leitweg-ID, but its check digits are wrong. Public buyers in Germany reject invoices with an unknown Leitweg-ID.`,
+        tr(
+          `The buyer reference (BT-10) "${reference}" looks like a Leitweg-ID, but its check digits are wrong. Public buyers in Germany reject invoices with an unknown Leitweg-ID.`,
+          `Die Käuferreferenz (BT-10) "${reference}" sieht aus wie eine Leitweg-ID, aber ihre Prüfziffern stimmen nicht. Öffentliche Auftraggeber in Deutschland weisen Rechnungen mit unbekannter Leitweg-ID zurück.`,
+        ),
       ),
     );
   }
@@ -394,7 +442,10 @@ export function validateInvoice(
         summandMessage(
           "SUM-PDF-LEVEL",
           "warning",
-          `The PDF metadata declares the profile ${base.source.pdfConformanceLevel}, but the embedded XML uses ${detection.profile.label}.`,
+          tr(
+            `The PDF metadata declares the profile ${base.source.pdfConformanceLevel}, but the embedded XML uses ${detection.profile.label}.`,
+            `Die PDF-Metadaten geben das Profil ${base.source.pdfConformanceLevel} an, die eingebettete XML verwendet aber ${detection.profile.label}.`,
+          ),
         ),
       );
     }

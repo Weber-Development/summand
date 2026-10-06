@@ -43,6 +43,21 @@ describe("validateInvoice", () => {
     expect(e?.ruleSet).toBe("en16931-ubl");
   });
 
+  it("reports messages in German with lang: de", () => {
+    const broken = xr.replace(
+      /<cbc:PayableAmount currencyID="EUR">[^<]+</,
+      '<cbc:PayableAmount currencyID="EUR">1.00<',
+    );
+    const en = validateInvoice(broken).errors.find((x) => x.id === "BR-CO-16");
+    const de = validateInvoice(broken, { lang: "de" }).errors.find((x) => x.id === "BR-CO-16");
+    expect(en?.message).toContain("Amount due for payment (BT-115)");
+    expect(de?.message).toContain("(BT-115)");
+    expect(de?.message).not.toContain("shall");
+    expect(de?.location).toBe(en?.location);
+    const notXml = validateInvoice("<x>", { lang: "de" });
+    expect(notXml.errors[0]?.message).toMatch(/^Die Rechnung ist kein wohlgeformtes XML/);
+  });
+
   it("applies XRechnung rules (missing buyer reference, BR-DE-15)", () => {
     const r = validateInvoice(cii.replace(/<ram:BuyerReference>[^<]*<\/ram:BuyerReference>/, ""));
     expect(r.errors.map((e) => e.id)).toContain("BR-DE-15");
