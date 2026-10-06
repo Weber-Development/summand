@@ -25,6 +25,8 @@ npx @sweberdev/summand validate invoices/*.xml invoices/*.pdf
 ## Features
 
 - Official rule sets: EN 16931 validation artefacts 1.3.16 (UBL and CII) and XRechnung Schematron 2.6.0 (XRechnung 3.0), with the severity levels of the KoSIT validator configuration
+- `summand rules` lists the bundled rule sets with version, source, licence and rule count; `summand rules --check` asks whether newer releases exist (downloads nothing)
+- Large invoices: 1,000 lines validate in under a second in Node on our test machine (see the performance guide for numbers and method)
 - XML Schema (XSD) validation against UBL 2.1 and UN/CEFACT CII D16B: unknown, missing, misplaced or repeated elements, attributes, dates and numbers (`SUM-XSD`, switch off with `schema: false`)
 - UBL Invoice, UBL Credit Note and UN/CEFACT CII
 - ZUGFeRD / Factur-X PDFs: embedded XML is found and validated, XMP profile compared
@@ -34,7 +36,7 @@ npx @sweberdev/summand validate invoices/*.xml invoices/*.pdf
 - Leitweg-ID check digits
 - CLI with JSON output and exit codes
 - Schematron and XPath 2.0 engine usable for your own rules
-- About 135 KB gzipped with all rule sets, schemas and both languages
+- About 137 KB gzipped with all rule sets, schemas and both languages
 
 ## Conformance
 

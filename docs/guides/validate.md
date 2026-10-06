@@ -39,7 +39,7 @@ const result = validateInvoice(input, options);
 | `syntax` | `"ubl-invoice"`, `"ubl-creditnote"` or `"cii"` |
 | `profile` | `id`, `label`, the specification identifier (BT-24) and whether the profile is EN 16931 compliant |
 | `source` | `type` (`"xml"` or `"pdf"`), the name of the embedded file and the conformance level from the PDF metadata |
-| `ruleSets` | Applied rule sets with name, version, source and licence |
+| `ruleSets` | Applied rule sets with the same data as `ruleSetInfo()`: name, version, release, publisher, source, licence and rule count, see [Rule sets and updates](rule-sets.md) |
 | `schemas` | XML Schemas the invoice was checked against (`ubl-2.1` or `cii-d16b`), with name, version, source and licence; empty with `schema: false` |
 | `errors`, `warnings`, `infos` | Messages, see below |
 | `summary` | Invoice number, type, dates, currency, buyer reference, seller and buyer (name, VAT ID, country), totals and the number of lines |

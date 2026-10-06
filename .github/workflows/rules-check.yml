@@ -1,0 +1,67 @@
+name: Rule set updates
+
+# Weekly check whether newer releases of the vendored rule sets exist (CEN EN 16931 validation
+# artefacts, KoSIT XRechnung Schematron). It only reads public release lists, downloads nothing
+# and changes no files. When a newer release exists it opens one issue per upstream project, or
+# updates the one that is already open.
+#
+# Scheduled workflows run from the default branch, so this starts working once it is merged.
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays, 06:17 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: rules-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.repository == 'Weber-Development/summand'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # checkout
+      issues: write # open and update the issue
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @sweberdev/summand run build
+
+      - name: Check upstream releases
+        env:
+          # Only raises the API rate limit of the public release lists.
+          SUMMAND_GITHUB_TOKEN: ${{ github.token }}
+        run: node packages/core/dist/bin.js rules --check --json > rules-check.json
+
+      - name: Open or update one issue per outdated upstream project
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          jq -r '[.[] | select(.check.status == "outdated")] | group_by(.source)[] | .[0].source' \
+            rules-check.json | while read -r source; do
+            repo="${source#https://github.com/}"
+            title="Rule set update available: ${repo}"
+            latest="$(jq -r --arg s "$source" '[.[] | select(.source == $s)][0].check.latest' rules-check.json)"
+            sets="$(jq -r --arg s "$source" \
+              '[.[] | select(.source == $s and .check.status == "outdated")] | map("- `\(.id)`: bundled \(.release), newest release \(.check.latest)") | join("\n")' \
+              rules-check.json)"
+            body="$(printf 'A newer release of [%s](%s) exists: **%s**.\n\n%s\n\nSee "Updating the rule sets" in RELEASE_CHECKLIST.md. This issue is kept up to date by the weekly rule set check (`.github/workflows/rules-check.yml`).\n' \
+              "$repo" "$source" "$latest" "$sets")"
+            number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" \
+              --json number,title --jq "[.[] | select(.title == \"$title\")][0].number // empty")"
+            if [ -n "$number" ]; then
+              gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --body "$body"
+              echo "Updated issue #$number"
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+            fi
+          done

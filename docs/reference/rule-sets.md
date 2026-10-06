@@ -25,4 +25,4 @@ These are the schemas EN 16931 1.3.16 and the KoSIT validator configuration for 
 
 ## Updates
 
-New releases of the rule sets come out a few times a year. Summand publishes a minor version for each, with the change in the changelog.
+New releases of the rule sets come out a few times a year. Summand publishes a minor version for each, with the change in the changelog. `summand rules` lists the bundled versions and `summand rules --check` asks whether newer releases exist, see [Rule sets and updates](../guides/rule-sets.md).

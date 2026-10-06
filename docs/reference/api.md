@@ -1,6 +1,6 @@
 ---
 title: API
-description: All exports of @sweberdev/summand, @sweberdev/summand/xpath and @sweberdev/summand/cli.
+description: All exports of @sweberdev/summand, @sweberdev/summand/xpath, @sweberdev/summand/rules-check and @sweberdev/summand/cli.
 ---
 
 ## @sweberdev/summand
@@ -17,7 +17,7 @@ description: All exports of @sweberdev/summand, @sweberdev/summand/xpath and @sw
 | `readPdf(bytes)` | Embedded files and XMP information of a PDF |
 | `isPdf(bytes)` | Whether bytes are a PDF |
 | `isValidLeitwegId(id)`, `parseLeitwegId(id)`, `leitwegCheckDigits(coarse, fine?)` | Leitweg-ID helpers |
-| `RULE_SETS`, `ruleSet(id)` | Bundled rule sets (metadata and compiled rules) |
+| `RULE_SETS`, `ruleSetInfo(id?)`, `ruleSet(id)` | Bundled rule sets: metadata (version, release, publisher, source, licence, rule count) and compiled rules. See [Rule sets and updates](../guides/rule-sets.md). |
 | `validateSchema(doc, schema, { lang? })` | Validates a parsed document against `"ubl-2.1"`, `"cii-d16b"` or a compiled `SchemaModel`; `lang: "de"` for German messages. Returns `SchemaFinding[]` (`kind`, `message`, `location`, `line`). |
 | `SCHEMAS` | Bundled XML Schemas (metadata) |
 | `compileSchematron(source, { id, includes? })` | Compiles a Schematron schema to a JSON rule set |
@@ -35,6 +35,14 @@ Types: `ValidationResult`, `ValidationMessage`, `ValidateOptions`, `Severity`, `
 | `builtinFunctions`, `xpathRegex(pattern, flags)` | Function library and XSD regex translation |
 | `Decimal`, `Untyped`, `XDate`, `XPathError`, `XPathSyntaxError` | Values and errors |
 
+## @sweberdev/summand/rules-check
+
+| Export | Description |
+|---|---|
+| `checkRuleSets({ fetch?, timeoutMs?, token? })` | Asks the public GitHub release lists whether newer releases of the bundled rule sets exist. Resolves to one `RuleSetCheck` (`id`, `version`, `status`, `latest?`, `reason?`) per rule set and never throws for network errors. |
+
+Not part of the main entry point, so browser bundles do not include it.
+
 ## @sweberdev/summand/cli
 
-`runCli(argv, io?)` runs the CLI and resolves to the exit code.
+`runCli(argv, io?, { fetch? })` runs the CLI and resolves to the exit code. `fetch` is only used by `rules --check`.
