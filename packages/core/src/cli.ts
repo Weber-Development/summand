@@ -23,6 +23,7 @@ validate options
   --no-schema           skip the XML Schema (XSD) validation
   --warnings-as-errors  exit 1 when there are warnings
   --quiet               only print a summary line per file
+  --lang <en|de>        language of the messages (default en)
 
 Files can be UBL or CII XML (XRechnung, ZUGFeRD, Factur-X, Peppol) or ZUGFeRD / Factur-X PDFs.
 Exit code 1 when an invoice is invalid.`;
@@ -50,17 +51,27 @@ export async function runCli(argv: string[], io: CliIo = defaultIo): Promise<num
   }
 }
 
-function formatMessage(m: ValidationMessage): string {
-  const where = m.line ? ` (line ${m.line})` : "";
-  return `  ${m.severity.padEnd(7)} ${m.id}${where}: ${m.message}`;
+const SEVERITY_DE: Record<ValidationMessage["severity"], string> = {
+  error: "Fehler",
+  warning: "Warnung",
+  info: "Hinweis",
+};
+
+function formatMessage(m: ValidationMessage, de = false): string {
+  const where = m.line ? (de ? ` (Zeile ${m.line})` : ` (line ${m.line})`) : "";
+  const severity = de ? SEVERITY_DE[m.severity] : m.severity;
+  return `  ${severity.padEnd(7)} ${m.id}${where}: ${m.message}`;
 }
 
-function summaryLine(file: string, r: ValidationResult): string {
-  const mark = r.valid ? "valid  " : "INVALID";
+function summaryLine(file: string, r: ValidationResult, de = false): string {
+  const mark = de ? (r.valid ? "gültig  " : "UNGÜLTIG") : r.valid ? "valid  " : "INVALID";
   const profile = r.profile
     ? `${r.profile.label}${r.source.type === "pdf" ? " (PDF)" : ""}`
     : r.source.type.toUpperCase();
-  return `${mark} ${file}  ${profile}  ${r.errors.length} error(s), ${r.warnings.length} warning(s)`;
+  const counts = de
+    ? `${r.errors.length} Fehler, ${r.warnings.length} Warnung(en)`
+    : `${r.errors.length} error(s), ${r.warnings.length} warning(s)`;
+  return `${mark} ${file}  ${profile}  ${counts}`;
 }
 
 async function validate(argv: string[], io: CliIo): Promise<number> {
@@ -74,8 +85,13 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
       "no-schema": { type: "boolean" },
       "warnings-as-errors": { type: "boolean" },
       quiet: { type: "boolean" },
+      lang: { type: "string" },
     },
   });
+  if (values.lang !== undefined && values.lang !== "en" && values.lang !== "de") {
+    io.err(`Unknown language "${values.lang}". Use --lang en or --lang de.`);
+    return 1;
+  }
   if (positionals.length === 0) {
     io.err("No files given. Usage: summand validate <files...>");
     return 1;
@@ -87,6 +103,7 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
       ...(values.xrechnung ? { xrechnung: true } : {}),
       ...(values["strict-extended"] ? { extended: "strict" as const } : {}),
       ...(values["no-schema"] ? { schema: false } : {}),
+      ...(values.lang === "de" ? { lang: "de" as const } : {}),
     });
     if (!result.valid || (values["warnings-as-errors"] && result.warnings.length > 0))
       failed = true;
@@ -94,10 +111,11 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
       io.out(JSON.stringify({ file, ...result }));
       continue;
     }
-    io.out(summaryLine(file, result));
+    const de = values.lang === "de";
+    io.out(summaryLine(file, result, de));
     if (values.quiet) continue;
-    for (const m of result.errors) io.out(formatMessage(m));
-    for (const m of result.warnings) io.out(formatMessage(m));
+    for (const m of result.errors) io.out(formatMessage(m, de));
+    for (const m of result.warnings) io.out(formatMessage(m, de));
   }
   return failed ? 1 : 0;
 }

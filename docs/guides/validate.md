@@ -29,6 +29,7 @@ const result = validateInvoice(input, options);
 | `schema` | `true` | Check the XML Schema (UBL 2.1 or CII D16B) before the Schematron rules. Violations are errors with the id `SUM-XSD`. See [XML Schema](schema.md). |
 | `leitwegId` | `true` | Warn when the buyer reference looks like a Leitweg-ID but has wrong check digits. |
 | `includeXml` | `false` | Return the validated XML in `result.xml` (handy for PDFs). |
+| `lang` | `"en"` | Language of the messages: `"en"` or `"de"`. German covers every EN 16931 rule and Summand's own checks; the XRechnung rules are German in the original. Rule ids, locations and lines are the same in both languages. |
 
 ## The result
 

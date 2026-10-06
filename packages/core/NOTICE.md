@@ -15,7 +15,9 @@ and the bundled code derived from them keep the licences of their sources:
 - Copyright: CEN/TC 434 and contributors
 - Licence: European Union Public Licence (EUPL) version 1.2, https://interoperable-europe.ec.europa.eu/collection/eupl/eupl-text-eupl-12
 - Change: converted from Schematron XML to JSON (contexts, tests and messages unchanged; the
-  leading "[rule id]-" of each message removed because the id is reported separately)
+  leading "[rule id]-" of each message removed because the id is reported separately); German
+  translations of the messages added (`rules-src/i18n/de.json`, made for Summand and licensed
+  under EUPL-1.2 like the messages they translate)
 
 ## XRechnung Schematron
 

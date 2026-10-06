@@ -31,6 +31,7 @@ The exit code is 1 when at least one invoice is invalid, so it can guard a CI st
 | `--xrechnung` | Apply XRechnung rules to every invoice |
 | `--strict-extended` | EXTENDED: EN 16931 violations are errors |
 | `--no-schema` | Skip the XML Schema (XSD) check |
+| `--lang de` | Messages and output in German (default `en`) |
 | `--warnings-as-errors` | Exit 1 on warnings too |
 | `--quiet` | Only the summary line per file |
 

@@ -33,6 +33,8 @@ export interface CompiledAssert {
   /** true for <report> (fires when the test is true). */
   report?: boolean;
   message: MessagePart[];
+  /** German message, when a translation exists. */
+  messageDe?: MessagePart[];
 }
 
 export interface CompiledRule {
@@ -260,6 +262,8 @@ export interface RunOptions {
   functions?: ReadonlyMap<string, XPathFunction>;
   /** Variables available to all expressions, e.g. external parameters. */
   variables?: ReadonlyMap<string, Sequence>;
+  /** Message language. German falls back to the original text where no translation exists. */
+  lang?: "en" | "de";
 }
 
 const selectCache = new WeakMap<Ast, Ast>();
@@ -378,7 +382,7 @@ export function runSchematron(
         findings.push({
           id: a.id,
           flag: a.flag,
-          message: renderMessage(p, a.message, env, node),
+          message: renderMessage(p, (options.lang === "de" && a.messageDe) || a.message, env, node),
           location: nodePath(node),
           line: node.line,
           ...(evaluationError ? { evaluationError } : {}),

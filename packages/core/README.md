@@ -30,10 +30,11 @@ npx @sweberdev/summand validate invoices/*.xml invoices/*.pdf
 - ZUGFeRD / Factur-X PDFs: embedded XML is found and validated, XMP profile compared
 - Profiles: XRechnung (standard, extension, CVD), EN 16931, Factur-X BASIC, EXTENDED, BASIC WL, MINIMUM, Peppol BIS
 - Rule id, severity, XPath and line for every message, plus an invoice summary
+- Messages in English or German (`lang: "de"`, CLI `--lang de`) for every rule
 - Leitweg-ID check digits
 - CLI with JSON output and exit codes
 - Schematron and XPath 2.0 engine usable for your own rules
-- About 115 KB gzipped with all rule sets and schemas
+- About 135 KB gzipped with all rule sets, schemas and both languages
 
 ## Conformance
 
