@@ -75,6 +75,46 @@ describe("XPath", () => {
   });
 });
 
+describe("descendant steps (document index)", () => {
+  // Nested elements of the same name, siblings and attributes at several depths.
+  const tree = parseXml(
+    '<r x="1"><a id="1" x="a"><a id="2" x="b"><b id="3"/></a><b id="4"/><a id="5"/></a><a id="6"><b id="7"/></a></r>',
+  );
+  const ids = (expr: string) => select(expr, tree).map((n) => (n as { value: string }).value);
+
+  it("finds elements and attributes anywhere, in document order", () => {
+    expect(ids("//a/@id")).toEqual(["1", "2", "5", "6"]);
+    expect(ids("//*/@id")).toEqual(["1", "2", "3", "4", "5", "6", "7"]);
+    expect(ids("//@x")).toEqual(["1", "a", "b"]);
+    expect(ids("/r/a//b/@id")).toEqual(["3", "4", "7"]);
+  });
+
+  it("does not select the context node itself for //name", () => {
+    expect(ids("/r/a//a/@id")).toEqual(["2", "5"]);
+    expect(ids("//a//a/@id")).toEqual(["2", "5"]);
+    expect(ids("/r/a[1]//a[true()]/@id")).toEqual(["2", "5"]);
+    expect(ids("//a/descendant-or-self::a/@id")).toEqual(["1", "2", "5", "6"]);
+  });
+
+  it("applies predicates per parent", () => {
+    expect(ids("//a[1]/@id")).toEqual(["1", "2"]);
+    expect(ids("//a[2]/@id")).toEqual(["5", "6"]);
+    expect(ids("//b[1]/@id")).toEqual(["3", "4", "7"]);
+    expect(ids("//a[b]/@id")).toEqual(["1", "2", "6"]);
+    expect(ids("(//a)[1]//a[true()]/@id")).toEqual(["2", "5"]);
+  });
+
+  it("starts from any context node and merges overlapping ranges once", () => {
+    expect(ids("//a[@id = ('2', '6')]//b/@id")).toEqual(["3", "7"]);
+    expect(ids("(//a)[position() < 3]//b/@id")).toEqual(["3", "4"]);
+    expect(ids("(//a/a | //a)//b/@id")).toEqual(["3", "4", "7"]);
+  });
+
+  it("reports an error in a predicate like any other evaluation error", () => {
+    expect(() => select("//a[xs:date(@id)]", tree)).toThrow(/xs:date/);
+  });
+});
+
 describe("Decimal", () => {
   it("parses and prints canonical values", () => {
     expect(Decimal.parse("0010.500")?.toString()).toBe("10.5");

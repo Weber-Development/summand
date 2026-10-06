@@ -1,7 +1,9 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
+import { rulesCommand } from "./cli-rules";
 import { isValidLeitwegId, leitwegCheckDigits, parseLeitwegId } from "./leitweg";
 import { extractInvoiceXml, isPdf } from "./pdf";
+import type { FetchLike } from "./rules-check";
 import { type ValidationMessage, type ValidationResult, validateInvoice } from "./validate";
 
 export interface CliIo {
@@ -15,6 +17,7 @@ Usage
   summand validate <files...> [options]
   summand extract <invoice.pdf> [--out <file.xml>]
   summand leitweg <leitweg-id>
+  summand rules [--json] [--check [--fail-on-outdated]]
 
 validate options
   --json                one JSON result per file (JSON Lines)
@@ -26,14 +29,24 @@ validate options
   --lang <en|de>        language of the messages (default en)
 
 Files can be UBL or CII XML (XRechnung, ZUGFeRD, Factur-X, Peppol) or ZUGFeRD / Factur-X PDFs.
-Exit code 1 when an invoice is invalid.`;
+Exit code 1 when an invoice is invalid.
+
+rules options
+  --json                machine-readable output
+  --check               ask GitHub whether newer releases of the rule sets exist (sends nothing
+                        about your invoices, downloads nothing)
+  --fail-on-outdated    with --check: exit code 3 when a newer release exists`;
 
 const defaultIo: CliIo = {
   out: (line) => process.stdout.write(`${line}\n`),
   err: (line) => process.stderr.write(`${line}\n`),
 };
 
-export async function runCli(argv: string[], io: CliIo = defaultIo): Promise<number> {
+export async function runCli(
+  argv: string[],
+  io: CliIo = defaultIo,
+  options: { fetch?: FetchLike } = {},
+): Promise<number> {
   const [command, ...rest] = argv;
   if (!command || command === "--help" || command === "-h" || command === "help") {
     io.out(HELP);
@@ -43,6 +56,7 @@ export async function runCli(argv: string[], io: CliIo = defaultIo): Promise<num
     if (command === "validate") return await validate(rest, io);
     if (command === "extract") return await extract(rest, io);
     if (command === "leitweg") return leitweg(rest, io);
+    if (command === "rules") return await rulesCommand(rest, io, options);
     io.err(`Unknown command "${command}". Run "summand --help".`);
     return 1;
   } catch (error) {

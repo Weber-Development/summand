@@ -17,7 +17,7 @@
 
 1. Replace the files in `packages/core/rules-src/` with the new release (keep the licence files).
 2. `pnpm rules`, then `pnpm test` (CEN unit tests and KoSIT test suite fixtures should be updated too).
-3. Update versions in `src/rules/index.ts`, `NOTICE.md` and `docs/reference/rule-sets.md`; changeset (minor).
+3. Update the versions in `packages/core/rules-src/sources.json` (the single record; `pnpm rules` writes them to `src/rules/info.json` and checks them against the vendored files and `NOTICE.md`), then `NOTICE.md` and `docs/reference/rule-sets.md`; changeset (minor).
 
 ## Updating the XML Schemas
 

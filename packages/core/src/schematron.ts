@@ -279,6 +279,7 @@ export function runSchematron(
     ...builtinFunctions,
     ...(options.functions ?? []),
   ]);
+  const memo: NonNullable<Env["memo"]> = new Map();
   const baseEnv = (item: XNode | undefined, vars: Map<string, Sequence>): Env => ({
     item,
     position: 1,
@@ -286,6 +287,7 @@ export function runSchematron(
     vars,
     functions,
     current: item,
+    memo,
   });
   const globals = new Map<string, Sequence>(options.variables ?? []);
 

@@ -1,0 +1,27 @@
+{
+  "en16931": {
+    "publisher": "CEN/TC 434 (ConnectingEurope)",
+    "repository": "ConnectingEurope/eInvoicing-EN16931",
+    "url": "https://github.com/ConnectingEurope/eInvoicing-EN16931",
+    "licence": "EUPL-1.2",
+    "version": "1.3.16",
+    "release": "1.3.16"
+  },
+  "xrechnung": {
+    "publisher": "Koordinierungsstelle für IT-Standards (KoSIT)",
+    "repository": "itplr-kosit/xrechnung-schematron",
+    "url": "https://github.com/itplr-kosit/xrechnung-schematron",
+    "licence": "Apache-2.0",
+    "version": "2.6.0",
+    "release": "v2.6.0"
+  },
+  "sets": {
+    "en16931-ubl": { "source": "en16931", "name": "EN 16931 validation artefacts (UBL)" },
+    "en16931-cii": { "source": "en16931", "name": "EN 16931 validation artefacts (UN/CEFACT CII)" },
+    "xrechnung-ubl": { "source": "xrechnung", "name": "XRechnung Schematron (UBL), XRechnung 3.0" },
+    "xrechnung-cii": {
+      "source": "xrechnung",
+      "name": "XRechnung Schematron (UN/CEFACT CII), XRechnung 3.0"
+    }
+  }
+}

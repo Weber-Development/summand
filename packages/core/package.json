@@ -39,6 +39,16 @@
         "default": "./dist/xpath.cjs"
       }
     },
+    "./rules-check": {
+      "import": {
+        "types": "./dist/rules-check.d.ts",
+        "default": "./dist/rules-check.js"
+      },
+      "require": {
+        "types": "./dist/rules-check.d.cts",
+        "default": "./dist/rules-check.cjs"
+      }
+    },
     "./cli": {
       "import": {
         "types": "./dist/cli.d.ts",
@@ -90,7 +100,8 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json",
     "rules": "tsx scripts/build-rules.ts",
-    "schemas": "tsx scripts/build-schemas.ts"
+    "schemas": "tsx scripts/build-schemas.ts",
+    "bench": "tsx bench/bench.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

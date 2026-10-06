@@ -22,6 +22,7 @@ The exit code is 1 when at least one invoice is invalid, so it can guard a CI st
 | `summand validate <files...>` | Validate XML and PDF files |
 | `summand extract <file.pdf> [--out file.xml]` | Write the embedded XML of a ZUGFeRD / Factur-X PDF |
 | `summand leitweg <id>` | Check a Leitweg-ID and print the correct check digits |
+| `summand rules [--json] [--check [--fail-on-outdated]]` | List the bundled rule sets with version, source, licence and rule count; `--check` asks whether newer releases exist (exit code 3 with `--fail-on-outdated`). See [Rule sets and updates](rule-sets.md). |
 
 ## validate options
 

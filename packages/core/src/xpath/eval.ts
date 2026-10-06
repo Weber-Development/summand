@@ -55,6 +55,12 @@ export interface Env {
   functions: ReadonlyMap<string, XPathFunction>;
   /** Value of XSLT current(): the context item where the outermost expression started. */
   current: Item | undefined;
+  /**
+   * Results of absolute paths that do not depend on variables or current(), kept for the life of
+   * one Schematron run: rules such as `not(@x) or /a/b/c/@x` would otherwise walk the whole
+   * document for every node they check.
+   */
+  memo?: Map<Ast, { root: XNode; value: Sequence }>;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -424,28 +430,154 @@ function matchesTest(n: XNode, test: NodeTest, axis: Axis): boolean {
   }
 }
 
-function documentOrder(nodes: XNode[]): XNode[] {
+/**
+ * Sorts nodes into document order and drops repeats. `distinct` says the caller knows there are no
+ * repeats (for example children of distinct parents), which saves the set.
+ */
+function documentOrder(nodes: XNode[], distinct = false): XNode[] {
   if (nodes.length < 2) return nodes;
-  const seen = new Set<XNode>();
-  const unique: XNode[] = [];
-  let sorted = true;
-  let prev = -1;
-  for (const n of nodes) {
-    if (seen.has(n)) continue;
-    seen.add(n);
-    unique.push(n);
-    if (n.order < prev) sorted = false;
+  let unique = nodes;
+  if (!distinct) {
+    const seen = new Set<XNode>();
+    unique = [];
+    for (const n of nodes) {
+      if (seen.has(n)) continue;
+      seen.add(n);
+      unique.push(n);
+    }
+  }
+  let prev = Number.NEGATIVE_INFINITY;
+  for (const n of unique) {
+    if (n.order < prev) return [...unique].sort((a, b) => a.order - b.order);
     prev = n.order;
   }
-  if (!sorted) unique.sort((a, b) => a.order - b.order);
   return unique;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Element index
+//
+// `//name` steps are by far the most frequent expensive operation in Schematron rules (every rule
+// context is turned into one). Instead of walking all descendants for each of them, a document is
+// indexed once: its elements by local name, in document order, plus the document order of the last
+// element of every subtree. The descendants of a node named `name` are then a range of one array.
+// Trees are never modified after parsing, so the index is kept for the life of the root node.
+
+interface DocIndex {
+  /** All elements in document order. */
+  elements: XNode[];
+  byLocal: Map<string, XNode[]>;
+  /** Attributes by local name, in document order. */
+  attributes: Map<string, XNode[]>;
+  /** Highest order of any node (element or attribute) in the subtree of each element. */
+  last: Map<XNode, number>;
+}
+
+const docIndexes = new WeakMap<XNode, DocIndex | null>();
+
+function indexOf(root: XNode): DocIndex | null {
+  const cached = docIndexes.get(root);
+  if (cached !== undefined) return cached;
+  const elements: XNode[] = [];
+  const byLocal = new Map<string, XNode[]>();
+  const attributes = new Map<string, XNode[]>();
+  const last = new Map<XNode, number>();
+  let previous = Number.NEGATIVE_INFINITY;
+  let sorted = true;
+  const visit = (n: XNode): number => {
+    let end = n.order;
+    for (const a of n.attributes) {
+      end = Math.max(end, a.order);
+      const list = attributes.get(a.local);
+      if (list) list.push(a);
+      else attributes.set(a.local, [a]);
+    }
+    for (const c of n.children) {
+      if (c.kind !== "element") continue;
+      if (c.order <= previous) sorted = false;
+      previous = c.order;
+      elements.push(c);
+      const list = byLocal.get(c.local);
+      if (list) list.push(c);
+      else byLocal.set(c.local, [c]);
+      end = visit(c);
+    }
+    if (n.kind === "element") last.set(n, end);
+    return end;
+  };
+  visit(root);
+  // Without strictly increasing element orders in document order, ranges are meaningless.
+  const index = sorted ? { elements, byLocal, attributes, last } : null;
+  docIndexes.set(root, index);
+  return index;
+}
+
+function rootOf(n: XNode): XNode {
+  let root = n;
+  while (root.parent) root = root.parent;
+  return root;
+}
+
+/**
+ * The elements `//name` selects below the given nodes: element nodes among each input node and
+ * its descendants that match the name test (`strict`: its descendants only). Undefined when the
+ * index cannot be used.
+ */
+function indexedDescendants(
+  inputs: Sequence,
+  test: Extract<NodeTest, { t: "name" }>,
+  strict: boolean,
+  attributes = false,
+): XNode[] | undefined {
+  if (test.local === null && attributes) return undefined;
+  const results: XNode[] = [];
+  for (const item of inputs) {
+    if (!isNode(item)) throw new XPathError("XPTY0019", "Path step on an atomic value");
+    if (item.kind !== "element" && item.kind !== "document") continue;
+    const root = rootOf(item);
+    const index = indexOf(root);
+    if (!index) return undefined;
+    const list =
+      test.local === null
+        ? index.elements
+        : (attributes ? index.attributes : index.byLocal).get(test.local);
+    if (!list) continue;
+    // Orders are integers: "after the node itself" is order + 1.
+    const from =
+      item.kind === "document" ? Number.NEGATIVE_INFINITY : strict ? item.order + 1 : item.order;
+    const to =
+      item.kind === "document" ? Number.POSITIVE_INFINITY : (index.last.get(item) as number);
+    // First element with order >= from.
+    let lo = 0;
+    let hi = list.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if ((list[mid] as XNode).order < from) lo = mid + 1;
+      else hi = mid;
+    }
+    for (let i = lo; i < list.length; i++) {
+      const n = list[i] as XNode;
+      if (n.order > to) break;
+      if (test.ns === null || n.ns === test.ns) results.push(n);
+    }
+  }
+  // The ranges of nested inputs overlap: merge them into document order without repeats.
+  return inputs.length > 1 ? documentOrder(results) : results;
 }
 
 // ---------------------------------------------------------------------------------------------
 // Evaluation
 
 function withItem(env: Env, item: Item, position: number, size: number): Env {
-  return { item, position, size, vars: env.vars, functions: env.functions, current: env.current };
+  return {
+    item,
+    position,
+    size,
+    vars: env.vars,
+    functions: env.functions,
+    current: env.current,
+    ...(env.memo ? { memo: env.memo } : {}),
+  };
 }
 
 function applyPredicates(env: Env, items: Sequence, preds: Ast[]): Sequence {
@@ -483,7 +615,117 @@ function evalStep(step: Step, env: Env, node: XNode): Sequence {
   return step.preds.length ? applyPredicates(env, value, step.preds) : value;
 }
 
+/**
+ * `//name` and `//name[predicate]…` through the index. Without predicates the result is every
+ * matching element among the descendants of the inputs (children of the inputs and of their
+ * descendants, which is what the walk below selects).
+ * With predicates, the children of each node are filtered separately, as XPath requires for
+ * positions: the matches are grouped by parent and the groups are visited in document order of
+ * the parents, like the walk does, so errors in predicates surface in the same order.
+ */
+function indexedWithPredicates(
+  env: Env,
+  inputs: Sequence,
+  step: Extract<Step, { t: "axis" }>,
+): XNode[] | undefined {
+  const test = step.test as Extract<NodeTest, { t: "name" }>;
+  if (step.axis === "attribute")
+    return step.preds.length === 0 ? indexedDescendants(inputs, test, false, true) : undefined;
+  // `//name` selects children of the inputs and of their descendants: descendants, not the inputs.
+  if (step.preds.length === 0) return indexedDescendants(inputs, test, true);
+  let matches = indexedDescendants(inputs, test, true);
+  if (!matches) return undefined;
+  if (inputs.length > 1) matches = documentOrder(matches);
+  const groups = new Map<XNode, XNode[]>();
+  for (const n of matches) {
+    const parent = n.parent as XNode;
+    const group = groups.get(parent);
+    if (group) group.push(n);
+    else groups.set(parent, [n]);
+  }
+  const parents = [...groups.keys()];
+  if (parents.length > 1) parents.sort((a, b) => a.order - b.order);
+  const results: XNode[] = [];
+  for (const parent of parents) {
+    for (const n of applyPredicates(env, groups.get(parent) as XNode[], step.preds) as XNode[])
+      results.push(n);
+  }
+  return documentOrder(results);
+}
+
+const contextFreeCache = new WeakMap<Ast, boolean>();
+
+/**
+ * Whether the value of an expression depends only on the document: no variables and no
+ * current(). Focus functions (position(), last(), ".") inside an absolute path refer to the path's
+ * own steps, so they do not count.
+ */
+function isContextFree(ast: Ast): boolean {
+  const cached = contextFreeCache.get(ast);
+  if (cached !== undefined) return cached;
+  const all = (list: Ast[]) => list.every(isContextFree);
+  let result: boolean;
+  switch (ast.t) {
+    case "num":
+    case "str":
+    case "ctx":
+      result = true;
+      break;
+    case "var":
+      result = false;
+      break;
+    case "seq":
+      result = all(ast.items);
+      break;
+    case "for":
+    case "quant":
+      // Bound names are variables too, but they are bound inside: only free ones matter. Keep it
+      // simple and treat any binding expression as dependent.
+      result = false;
+      break;
+    case "if":
+      result = all([ast.cond, ast.whenTrue, ast.whenFalse]);
+      break;
+    case "or":
+    case "and":
+    case "gcmp":
+    case "vcmp":
+    case "ncmp":
+    case "range":
+    case "arith":
+    case "setop":
+      result = all([ast.l, ast.r]);
+      break;
+    case "neg":
+    case "instance":
+    case "castable":
+    case "cast":
+      result = isContextFree(ast.e);
+      break;
+    case "path":
+      result = ast.steps.every((step) =>
+        step.t === "axis" ? all(step.preds) : isContextFree(step.primary) && all(step.preds),
+      );
+      break;
+    case "call":
+      result = ast.name !== "fn:current" && all(ast.args);
+      break;
+  }
+  contextFreeCache.set(ast, result);
+  return result;
+}
+
 function evalPath(ast: Extract<Ast, { t: "path" }>, env: Env): Sequence {
+  if (!ast.absolute || !env.memo) return evalPathUncached(ast, env);
+  const root = rootOf(contextNode(env));
+  const hit = env.memo.get(ast);
+  if (hit && hit.root === root) return hit.value;
+  const value = evalPathUncached(ast, env);
+  if (isContextFree(ast)) env.memo.set(ast, { root, value });
+  return value;
+}
+
+function evalPathUncached(ast: Extract<Ast, { t: "path" }>, env: Env): Sequence {
   let current: Sequence;
   let steps = ast.steps;
   if (ast.absolute) {
@@ -508,11 +750,23 @@ function evalPath(ast: Extract<Ast, { t: "path" }>, env: Env): Sequence {
     const desc = step.desc || (index === 0 && absoluteDesc);
     let inputs = current;
     if (desc) {
+      if (
+        step.t === "axis" &&
+        (step.axis === "child" || step.axis === "attribute") &&
+        step.test.t === "name"
+      ) {
+        const indexed = indexedWithPredicates(env, current, step);
+        if (indexed) {
+          current = indexed;
+          return;
+        }
+      }
       // E1//E2 is E1/descendant-or-self::node()/E2
       const expanded: XNode[] = [];
       for (const item of inputs) {
         if (!isNode(item)) throw new XPathError("XPTY0019", "Path step on an atomic value");
-        expanded.push(item, ...descendants(item));
+        expanded.push(item);
+        for (const d of descendants(item)) expanded.push(d);
       }
       inputs = documentOrder(expanded);
       if (step.t === "axis" && step.axis === "child" && step.preds.length === 0) {
@@ -531,9 +785,11 @@ function evalPath(ast: Extract<Ast, { t: "path" }>, env: Env): Sequence {
     let allNodes = true;
     let anyNode = false;
     const size = inputs.length;
+    // Only predicates and filter expressions look at the focus: skip building one otherwise.
+    const needsFocus = step.t === "filter" || step.preds.length > 0;
     inputs.forEach((item, i) => {
       if (!isNode(item)) throw new XPathError("XPTY0019", "Path step on an atomic value");
-      const r = evalStep(step, withItem(env, item, i + 1, size), item);
+      const r = evalStep(step, needsFocus ? withItem(env, item, i + 1, size) : env, item);
       for (const v of r) {
         if (isNode(v)) anyNode = true;
         else allNodes = false;
@@ -542,7 +798,10 @@ function evalPath(ast: Extract<Ast, { t: "path" }>, env: Env): Sequence {
     });
     if (anyNode && !allNodes)
       throw new XPathError("XPTY0018", "Path mixes nodes and atomic values");
-    current = allNodes ? documentOrder(results as XNode[]) : results;
+    // A node has one parent and one owner element, so child and attribute steps over distinct
+    // inputs cannot select a node twice.
+    const distinct = step.t === "axis" && (step.axis === "child" || step.axis === "attribute");
+    current = allNodes ? documentOrder(results as XNode[], distinct) : results;
   });
   return current;
 }
