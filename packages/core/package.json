@@ -1,6 +1,6 @@
 {
   "name": "@sweberdev/summand",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Validate XRechnung and ZUGFeRD/Factur-X e-invoices against EN 16931 in pure TypeScript: the official CEN and KoSIT Schematron rules, UBL and CII, PDF extraction, CLI. Runs in Node and the browser, no Java.",
   "license": "MIT",
   "author": "Seya Weber (https://github.com/sxwxbxr)",

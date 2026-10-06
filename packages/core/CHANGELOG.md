@@ -1,5 +1,11 @@
 # @sweberdev/summand
 
+## 0.2.0
+
+### Minor Changes
+
+- a365ad1: German messages: `validateInvoice(input, { lang: "de" })` and `summand validate --lang de` report every EN 16931 rule and Summand's own checks in German (the XRechnung rules are German in the original). Rule ids, locations and lines stay the same in both languages.
+
 ## 0.1.0
 
 ### Minor Changes
