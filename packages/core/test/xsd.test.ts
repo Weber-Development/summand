@@ -54,6 +54,21 @@ describe("XML Schema validation: valid documents", () => {
     }
   });
 
+  it("reports schema errors in German with lang: de", () => {
+    const broken = ubl
+      .replace("<cbc:IssueDate>2016-04-04<", "<cbc:IssueDate>04.04.2016<")
+      .replace("<cbc:ID>123456XX</cbc:ID>", "");
+    const de = validateInvoice(broken, { lang: "de" }).errors.filter((e) => e.id === "SUM-XSD");
+    expect(de.map((e) => e.message)).toEqual([
+      "Pflichtelement cbc:ID fehlt in ubl:Invoice (erwartet vor cbc:IssueDate).",
+      'Wert "04.04.2016" von cbc:IssueDate ist kein gültiges Datum (JJJJ-MM-TT).',
+    ]);
+    expect(de[1]?.location).toBe("/ubl:Invoice/cbc:IssueDate");
+    const doc = parseXml(broken);
+    expect(validateSchema(doc, "ubl-2.1", { lang: "de" })[1]?.message).toContain("gültiges Datum");
+    expect(validateSchema(doc, "ubl-2.1")[1]?.message).toContain("not a valid xs:date");
+  });
+
   it("reports the schema in the result and can be switched off", () => {
     expect(validateInvoice(ubl).schemas.map((s) => s.id)).toEqual(["ubl-2.1"]);
     expect(validateInvoice(cii).schemas.map((s) => s.id)).toEqual(["cii-d16b"]);

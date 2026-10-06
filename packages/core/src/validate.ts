@@ -352,7 +352,7 @@ export function validateInvoice(
     // Schema errors do not stop the Schematron checks: like the KoSIT validator, both are reported.
     const schemaId: SchemaId = detection.syntax === "cii" ? "cii-d16b" : "ubl-2.1";
     base.schemas.push(SCHEMAS[schemaId]);
-    for (const f of validateSchema(doc, schemaId)) {
+    for (const f of validateSchema(doc, schemaId, de ? { lang: "de" } : {})) {
       base.errors.push(
         summandMessage("SUM-XSD", "error", f.message, { location: f.location, line: f.line }),
       );

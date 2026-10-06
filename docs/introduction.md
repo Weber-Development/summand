@@ -17,7 +17,7 @@ Since 1 January 2025 every business in Germany has to be able to receive e-invoi
 - **Clear results**: every message has the rule id (`BR-CO-10`, `BR-DE-15`), the severity, the XPath and the line in the XML, plus a summary of the invoice (number, date, parties, totals).
 - **Leitweg-ID check** for invoices to German public buyers.
 - **CLI** for scripts and CI: `summand validate invoices/*.pdf`.
-- **No dependencies.** About 115 KB gzipped including all rule sets and schemas.
+- **No dependencies.** About 135 KB gzipped including all rule sets, schemas and both languages.
 
 ## How close is it to the official validator?
 

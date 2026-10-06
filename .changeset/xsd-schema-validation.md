@@ -7,5 +7,6 @@ XML Schema (XSD) validation. `validateInvoice` now checks every invoice against 
 - Reports unexpected, missing, misplaced and repeated elements, missing and unknown attributes, fixed attribute values, and values that do not match their type or facets (for example `xs:date`, `xs:decimal`, `maxLength`), each as an error with the id `SUM-XSD`, the XPath and the line.
 - The Schematron rules still run when the schema check fails, so both kinds of errors are reported together.
 - New option `schema` (default `true`) and CLI flag `--no-schema` to skip the check; the result has a new `schemas` field listing the schemas used.
-- New export `validateSchema(doc, "ubl-2.1" | "cii-d16b")` and `SCHEMAS` for using the schema check on its own.
+- Schema messages follow the `lang` option (English or German, CLI `--lang de`); element names, values and locations are unchanged.
+- New export `validateSchema(doc, "ubl-2.1" | "cii-d16b", { lang })` and `SCHEMAS` for using the schema check on its own.
 - The XSD files are vendored unchanged and compiled at build time into compact JSON models (about 14 KB gzipped for both); the schema check takes well under a millisecond for a typical invoice.

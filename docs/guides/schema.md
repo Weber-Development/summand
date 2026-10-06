@@ -26,7 +26,7 @@ These are the schemas EN 16931 1.3.16 and the KoSIT configuration for XRechnung 
 
 ## What is reported
 
-Every violation is an error with the id `SUM-XSD`, the XPath of the element or attribute and its line:
+Every violation is an error with the id `SUM-XSD`, the XPath of the element or attribute and its line. With `lang: "de"` (CLI `--lang de`) the messages are in German, for example `Pflichtelement cbc:ID fehlt in ubl:Invoice (erwartet vor cbc:IssueDate).`; element names, values and locations stay the same.
 
 | Problem | Example message |
 |---|---|
@@ -49,7 +49,7 @@ The Schematron rules still run when the schema check fails, so you see every pro
 ```ts
 import { parseXml, validateSchema } from "@sweberdev/summand";
 
-const findings = validateSchema(parseXml(xml), "cii-d16b");
+const findings = validateSchema(parseXml(xml), "cii-d16b"); // { lang: "de" } for German messages
 // [{ kind: "missing-element", message: "…", location: "/rsm:CrossIndustryInvoice/…", line: 17 }]
 ```
 

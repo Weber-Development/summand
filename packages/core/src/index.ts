@@ -42,6 +42,7 @@ export {
   type SchemaFindingKind,
   type SchemaId,
   type SchemaInfo,
+  type ValidateSchemaOptions,
   validateSchema,
 } from "./xsd";
 export type { SchemaModel } from "./xsd-model";

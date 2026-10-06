@@ -18,7 +18,7 @@ The invoice never leaves the browser, which helps when you would rather not stor
 
 ## Size and speed
 
-All four rule sets and the UBL and CII schemas are bundled as JSON: about 115 KB gzipped in total. A typical invoice validates in 20 to 60 ms (the schema check takes under a millisecond of that); large invoices with hundreds of lines take longer. For big files, run it in a Web Worker so the page stays responsive:
+All four rule sets and the UBL and CII schemas are bundled as JSON: about 135 KB gzipped in total, with the messages in English and German. A typical invoice validates in 20 to 60 ms (the schema check takes under a millisecond of that); large invoices with hundreds of lines take longer. For big files, run it in a Web Worker so the page stays responsive:
 
 ```ts
 // worker.ts

@@ -217,18 +217,25 @@ const INTEGER_RANGES: Partial<Record<BuiltinType, [bigint | null, bigint | null]
   unsignedByte: [0n, 255n],
 };
 
-const TYPE_HINTS: Partial<Record<BuiltinType, string>> = {
-  decimal: "a decimal number such as 123.45",
-  integer: "an integer",
-  boolean: "true, false, 1 or 0",
-  date: "a date YYYY-MM-DD",
-  time: "a time hh:mm:ss",
-  dateTime: "a date and time YYYY-MM-DDThh:mm:ss",
-  base64Binary: "Base64 data",
-  hexBinary: "hexadecimal data",
-  language: "a language code such as de or en-GB",
-  double: "a floating point number",
-  float: "a floating point number",
+/** Description of the expected format: [English hint, German predicate]. */
+const TYPE_HINTS: Partial<Record<BuiltinType, [string, string]>> = {
+  decimal: ["a decimal number such as 123.45", "ist keine gültige Dezimalzahl (z. B. 123.45)"],
+  integer: ["an integer", "ist keine gültige ganze Zahl"],
+  boolean: ["true, false, 1 or 0", "ist kein gültiger Wahrheitswert (true, false, 1 oder 0)"],
+  date: ["a date YYYY-MM-DD", "ist kein gültiges Datum (JJJJ-MM-TT)"],
+  time: ["a time hh:mm:ss", "ist keine gültige Uhrzeit (hh:mm:ss)"],
+  dateTime: [
+    "a date and time YYYY-MM-DDThh:mm:ss",
+    "ist kein gültiger Zeitpunkt (JJJJ-MM-TTThh:mm:ss)",
+  ],
+  base64Binary: ["Base64 data", "sind keine gültigen Base64-Daten"],
+  hexBinary: ["hexadecimal data", "sind keine gültigen Hexadezimaldaten"],
+  language: [
+    "a language code such as de or en-GB",
+    "ist kein gültiger Sprachcode (z. B. de oder en-GB)",
+  ],
+  double: ["a floating point number", "ist keine gültige Gleitkommazahl"],
+  float: ["a floating point number", "ist keine gültige Gleitkommazahl"],
 };
 
 function isLeap(year: number) {
@@ -412,14 +419,23 @@ function valueLength(b: BuiltinType, v: string): number {
 }
 
 /** Checks facets; returns a description of the first violation. */
-function facetError(b: BuiltinType, v: string, f: Facets): string | null {
+function facetError(b: BuiltinType, v: string, f: Facets, de: boolean): string | null {
+  const tr = (en: string, german: string) => (de ? german : en);
   if (f.enumeration && !f.enumeration.includes(v)) {
     const list = f.enumeration.slice(0, 10).join(", ");
-    return `is not one of the allowed values (${list}${f.enumeration.length > 10 ? ", ..." : ""})`;
+    const more = f.enumeration.length > 10 ? ", ..." : "";
+    return tr(
+      `is not one of the allowed values (${list}${more})`,
+      `ist keiner der zulässigen Werte (${list}${more})`,
+    );
   }
   if (f.pattern) {
     for (const step of f.pattern) {
-      if (!step.some((p) => pattern(p).test(v))) return "does not match the required pattern";
+      if (!step.some((p) => pattern(p).test(v)))
+        return tr(
+          "does not match the required pattern",
+          "entspricht nicht dem vorgeschriebenen Muster",
+        );
     }
   }
   const len =
@@ -427,37 +443,56 @@ function facetError(b: BuiltinType, v: string, f: Facets): string | null {
       ? valueLength(b, v)
       : 0;
   if (f.length !== undefined && len !== f.length)
-    return `must have length ${f.length} (has ${len})`;
+    return tr(
+      `must have length ${f.length} (has ${len})`,
+      `muss die Länge ${f.length} haben (hat ${len})`,
+    );
   if (f.minLength !== undefined && len < f.minLength)
-    return `is shorter than the minimum length ${f.minLength}`;
+    return tr(
+      `is shorter than the minimum length ${f.minLength}`,
+      `ist kürzer als die Mindestlänge ${f.minLength}`,
+    );
   if (f.maxLength !== undefined && len > f.maxLength)
-    return `is longer than the maximum length ${f.maxLength}`;
+    return tr(
+      `is longer than the maximum length ${f.maxLength}`,
+      `ist länger als die Höchstlänge ${f.maxLength}`,
+    );
   if (f.totalDigits !== undefined || f.fractionDigits !== undefined) {
     const { int, frac } = decimalParts(v);
     if (f.totalDigits !== undefined && int.length + frac.length > f.totalDigits)
-      return `has more than ${f.totalDigits} digits`;
+      return tr(`has more than ${f.totalDigits} digits`, `hat mehr als ${f.totalDigits} Stellen`);
     if (f.fractionDigits !== undefined && frac.length > f.fractionDigits)
-      return `has more than ${f.fractionDigits} fraction digits`;
+      return tr(
+        `has more than ${f.fractionDigits} fraction digits`,
+        `hat mehr als ${f.fractionDigits} Nachkommastellen`,
+      );
   }
   if (f.minInclusive !== undefined && compareDecimal(v, f.minInclusive) < 0)
-    return `is less than ${f.minInclusive}`;
+    return tr(`is less than ${f.minInclusive}`, `ist kleiner als ${f.minInclusive}`);
   if (f.maxInclusive !== undefined && compareDecimal(v, f.maxInclusive) > 0)
-    return `is greater than ${f.maxInclusive}`;
+    return tr(`is greater than ${f.maxInclusive}`, `ist größer als ${f.maxInclusive}`);
   if (f.minExclusive !== undefined && compareDecimal(v, f.minExclusive) <= 0)
-    return `must be greater than ${f.minExclusive}`;
+    return tr(`must be greater than ${f.minExclusive}`, `muss größer als ${f.minExclusive} sein`);
   if (f.maxExclusive !== undefined && compareDecimal(v, f.maxExclusive) >= 0)
-    return `must be less than ${f.maxExclusive}`;
+    return tr(`must be less than ${f.maxExclusive}`, `muss kleiner als ${f.maxExclusive} sein`);
   return null;
 }
 
 /** Validates a simple value; returns the normalised value and an error description. */
-function checkSimple(t: SimpleTypeDef, raw: string): { value: string; error: string | null } {
+function checkSimple(
+  t: SimpleTypeDef,
+  raw: string,
+  de: boolean,
+): { value: string; error: string | null } {
   const value = whitespace(t.b, raw);
   if (!builtinValid(t.b, value)) {
     const hint = TYPE_HINTS[t.b];
-    return { value, error: `is not a valid xs:${t.b}${hint ? ` (expected ${hint})` : ""}` };
+    const error = de
+      ? (hint?.[1] ?? `ist kein gültiger Wert vom Typ xs:${t.b}`)
+      : `is not a valid xs:${t.b}${hint ? ` (expected ${hint[0]})` : ""}`;
+    return { value, error };
   }
-  return { value, error: t.f ? facetError(t.b, value, t.f) : null };
+  return { value, error: t.f ? facetError(t.b, value, t.f, de) : null };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -472,7 +507,15 @@ function displayName(n: XNode): string {
 
 class Validator {
   readonly findings: SchemaFinding[] = [];
-  constructor(readonly rt: Runtime) {}
+  constructor(
+    readonly rt: Runtime,
+    readonly de = false,
+  ) {}
+
+  /** Picks the message in the requested language. */
+  t(en: string, de: string): string {
+    return this.de ? de : en;
+  }
 
   report(kind: SchemaFindingKind, node: XNode, message: string) {
     this.findings.push({ kind, message, location: nodePath(node), line: node.line });
@@ -500,7 +543,7 @@ class Validator {
 
   slotName(s: Slot, context: XNode): string {
     if (s.key) return this.modelName(s.key, context);
-    return "any element";
+    return this.t("any element", "beliebiges Element");
   }
 
   wildcardMatches(w: AnyParticle, n: XNode): boolean {
@@ -524,7 +567,14 @@ class Validator {
       if (a.local === "type") return; // xsi:type substitutes the type: not supported, skipped
     }
     if (nil) {
-      this.report("content", el, `${displayName(el)} is not nillable (xsi:nil is not allowed).`);
+      this.report(
+        "content",
+        el,
+        this.t(
+          `${displayName(el)} is not nillable (xsi:nil is not allowed).`,
+          `${displayName(el)} darf nicht leer sein (xsi:nil ist nicht erlaubt).`,
+        ),
+      );
       return;
     }
     if (t.k === "s") {
@@ -549,7 +599,10 @@ class Validator {
         this.report(
           "content",
           el,
-          `${displayName(el)} must not contain text, only child elements (found ${quote(child.value.trim())}).`,
+          this.t(
+            `${displayName(el)} must not contain text, only child elements (found ${quote(child.value.trim())}).`,
+            `${displayName(el)} darf keinen Text enthalten, nur Unterelemente (gefunden: ${quote(child.value.trim())}).`,
+          ),
         );
       }
     }
@@ -558,7 +611,10 @@ class Validator {
         this.report(
           "unexpected-element",
           kids[0] as XNode,
-          `${displayName(el)} must be empty, but contains ${displayName(kids[0] as XNode)}.`,
+          this.t(
+            `${displayName(el)} must be empty, but contains ${displayName(kids[0] as XNode)}.`,
+            `${displayName(el)} muss leer sein, enthält aber ${displayName(kids[0] as XNode)}.`,
+          ),
         );
       return;
     }
@@ -590,7 +646,10 @@ class Validator {
       this.report(
         "unexpected-element",
         el,
-        `${displayName(el)} has no schema declaration but must be validated strictly.`,
+        this.t(
+          `${displayName(el)} has no schema declaration but must be validated strictly.`,
+          `Unerwartetes Element ${displayName(el)}: Es ist im Schema nicht deklariert, muss aber streng geprüft werden.`,
+        ),
       );
       return;
     }
@@ -609,7 +668,10 @@ class Validator {
       this.report(
         "unknown-attribute",
         a,
-        `Attribute ${displayName(a)} is not allowed on ${displayName(el)}.`,
+        this.t(
+          `Attribute ${displayName(a)} is not allowed on ${displayName(el)}.`,
+          `Attribut ${displayName(a)} ist an ${displayName(el)} nicht erlaubt.`,
+        ),
       );
     }
   }
@@ -630,24 +692,33 @@ class Validator {
         this.report(
           "unknown-attribute",
           a,
-          `Attribute ${displayName(a)} is not allowed on ${displayName(el)}.`,
+          this.t(
+            `Attribute ${displayName(a)} is not allowed on ${displayName(el)}.`,
+            `Attribut ${displayName(a)} ist an ${displayName(el)} nicht erlaubt.`,
+          ),
         );
         continue;
       }
       seen.add(def[0]);
       const t = this.rt.model.types[def[1]] as SimpleTypeDef;
-      const { value, error } = checkSimple(t, a.value);
+      const { value, error } = checkSimple(t, a.value, this.de);
       if (error) {
         this.report(
           "attribute-value",
           a,
-          `Value ${quote(a.value)} of attribute ${displayName(a)} on ${displayName(el)} ${error}.`,
+          this.t(
+            `Value ${quote(a.value)} of attribute ${displayName(a)} on ${displayName(el)} ${error}.`,
+            `Wert ${quote(a.value)} des Attributs ${displayName(a)} an ${displayName(el)} ${error}.`,
+          ),
         );
       } else if (def[3] !== undefined && value !== whitespace(t.b, def[3])) {
         this.report(
           "attribute-value",
           a,
-          `Attribute ${displayName(a)} on ${displayName(el)} must have the fixed value ${quote(def[3])}, found ${quote(a.value)}.`,
+          this.t(
+            `Attribute ${displayName(a)} on ${displayName(el)} must have the fixed value ${quote(def[3])}, found ${quote(a.value)}.`,
+            `Attribut ${displayName(a)} an ${displayName(el)} muss den festen Wert ${quote(def[3])} haben, gefunden: ${quote(a.value)}.`,
+          ),
         );
       }
     }
@@ -657,7 +728,10 @@ class Validator {
       this.report(
         "missing-attribute",
         el,
-        `Required attribute ${name} is missing on ${displayName(el)}.`,
+        this.t(
+          `Required attribute ${name} is missing on ${displayName(el)}.`,
+          `Pflichtattribut ${name} fehlt an ${displayName(el)}.`,
+        ),
       );
     }
   }
@@ -670,14 +744,25 @@ class Validator {
         this.report(
           "unexpected-element",
           child,
-          `${displayName(el)} has a simple value and must not contain the element ${displayName(child)}.`,
+          this.t(
+            `${displayName(el)} has a simple value and must not contain the element ${displayName(child)}.`,
+            `Unerwartetes Element ${displayName(child)}: ${displayName(el)} hat einen einfachen Wert und darf keine Unterelemente enthalten.`,
+          ),
         );
       }
     }
     if (hasChild) return;
     const raw = stringValue(el);
-    const { error } = checkSimple(t, raw);
-    if (error) this.report("value", el, `Value ${quote(raw)} of ${displayName(el)} ${error}.`);
+    const { error } = checkSimple(t, raw, this.de);
+    if (error)
+      this.report(
+        "value",
+        el,
+        this.t(
+          `Value ${quote(raw)} of ${displayName(el)} ${error}.`,
+          `Wert ${quote(raw)} von ${displayName(el)} ${error}.`,
+        ),
+      );
   }
 
   // -------------------------------------------------------------------------------------------
@@ -695,7 +780,10 @@ class Validator {
         this.report(
           "content",
           el,
-          `The content of ${displayName(el)} does not match its schema type (allowed: ${expected}).`,
+          this.t(
+            `The content of ${displayName(el)} does not match its schema type (allowed: ${expected}).`,
+            `Der Inhalt von ${displayName(el)} entspricht nicht seinem Schematyp (erlaubt: ${expected}).`,
+          ),
         );
       }
       return;
@@ -749,7 +837,10 @@ class Validator {
         this.report(
           "too-many",
           kid,
-          `${displayName(kid)} occurs too often in ${displayName(el)} (at most ${slot.max} allowed).`,
+          this.t(
+            `${displayName(kid)} occurs too often in ${displayName(el)} (at most ${slot.max} allowed).`,
+            `${displayName(kid)} kommt in ${displayName(el)} zu oft vor (höchstens ${slot.max} erlaubt).`,
+          ),
         );
         continue;
       }
@@ -767,7 +858,10 @@ class Validator {
         this.report(
           "element-order",
           kid,
-          `${displayName(kid)} is in the wrong position in ${displayName(el)}${next ? `: it must come before ${displayName(next)}` : ""}.`,
+          this.t(
+            `${displayName(kid)} is in the wrong position in ${displayName(el)}${next ? `: it must come before ${displayName(next)}` : ""}.`,
+            `${displayName(kid)} steht in ${displayName(el)} an der falschen Stelle${next ? `: Es muss vor ${displayName(next)} stehen` : ""}.`,
+          ),
         );
         continue;
       }
@@ -787,7 +881,10 @@ class Validator {
       this.report(
         "unexpected-element",
         kid,
-        `${displayName(kid)} is not allowed in ${displayName(el)}${expected.length ? ` (expected ${expected.join(", ")})` : ""}.`,
+        this.t(
+          `${displayName(kid)} is not allowed in ${displayName(el)}${expected.length ? ` (expected ${expected.join(", ")})` : ""}.`,
+          `Unerwartetes Element ${displayName(kid)} in ${displayName(el)}${expected.length ? ` (erwartet: ${expected.join(", ")})` : ""}.`,
+        ),
       );
     }
     const slot = slots[i];
@@ -808,15 +905,12 @@ class Validator {
   }
 
   reportMissing(el: XNode, names: string[], before?: XNode) {
-    const what =
-      names.length === 1
-        ? `Required element ${names[0]} is missing`
-        : `Required elements ${names.join(", ")} are missing`;
-    this.report(
-      "missing-element",
-      el,
-      `${what} in ${displayName(el)}${before ? ` (expected before ${displayName(before)})` : ""}.`,
-    );
+    const where = displayName(el);
+    const ahead = before ? displayName(before) : "";
+    const message = this.de
+      ? `${names.length === 1 ? `Pflichtelement ${names[0]} fehlt` : `Pflichtelemente ${names.join(", ")} fehlen`} in ${where}${ahead ? ` (erwartet vor ${ahead})` : ""}.`
+      : `${names.length === 1 ? `Required element ${names[0]} is missing` : `Required elements ${names.join(", ")} are missing`} in ${where}${ahead ? ` (expected before ${ahead})` : ""}.`;
+    this.report("missing-element", el, message);
   }
 
   /** Greedy matcher for general content models; returns the position after the match or -1. */
@@ -907,18 +1001,30 @@ function rootType(rt: Runtime, root: XNode): number | undefined {
  * Validates a parsed document against a bundled schema ("ubl-2.1" for UBL Invoice and CreditNote,
  * "cii-d16b" for UN/CEFACT CrossIndustryInvoice) or a compiled {@link SchemaModel}.
  */
-export function validateSchema(doc: XNode, schema: SchemaId | SchemaModel): SchemaFinding[] {
+export interface ValidateSchemaOptions {
+  /** Message language. Default "en". */
+  lang?: "en" | "de";
+}
+
+export function validateSchema(
+  doc: XNode,
+  schema: SchemaId | SchemaModel,
+  options: ValidateSchemaOptions = {},
+): SchemaFinding[] {
   const model = typeof schema === "string" ? schemaModel(schema) : schema;
   const rt = runtime(model);
   const root = doc.kind === "document" ? doc.children.find((c) => c.kind === "element") : doc;
   if (!root) return [];
-  const v = new Validator(rt);
+  const v = new Validator(rt, options.lang === "de");
   const type = rootType(rt, root);
   if (type === undefined) {
     v.report(
       "unexpected-element",
       root,
-      `The root element ${displayName(root)} is not declared in the schema.`,
+      v.t(
+        `The root element ${displayName(root)} is not declared in the schema.`,
+        `Das Wurzelelement ${displayName(root)} ist im Schema nicht deklariert.`,
+      ),
     );
     return v.findings;
   }
