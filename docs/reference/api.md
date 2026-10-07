@@ -100,4 +100,4 @@ Not part of the main entry point, so browser bundles do not include it.
 | `summand leitweg <id>` | |
 | `summand rules` | Options `--json`, `--check`, `--fail-on-outdated` |
 | `summand --version` | Prints the version |
-| Exit codes | 0, 1 and 3, see [Error codes](error-codes.md#exit-codes-of-the-summand-command) |
+| Exit codes | 0, 1, 2 and 3, see [Error codes](error-codes.md#exit-codes-of-the-summand-command) |

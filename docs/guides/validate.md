@@ -70,6 +70,10 @@ Rule ids starting with `SUM-` are Summand's own checks. Each is described with c
 | `SUM-PDF-LEVEL` | The PDF metadata declares a different profile than the XML |
 | `SUM-LEITWEG` | The buyer reference looks like a Leitweg-ID but its check digits are wrong |
 
+## Exit codes on the command line
+
+`summand validate` reports the verdict in its exit code: 0 when every invoice is valid, 1 when at least one is invalid, which includes input that is not an invoice (`SUM-FORMAT`, `SUM-XML`, `SUM-PDF`), and 2 when the command could not run, for example because a file does not exist. See [CLI](cli.md#exit-codes).
+
 ## Showing errors to people
 
 Rule texts are written for developers. For an upload form, a short summary and the first few messages usually work best:

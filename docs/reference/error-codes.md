@@ -121,9 +121,10 @@ A message from a rule set can have `evaluationError`: the rule could not be eval
 | Code | Meaning |
 |---|---|
 | 0 | Success. Every invoice given to `validate` is valid (warnings do not count unless `--warnings-as-errors`), or the command did what was asked (`extract`, `leitweg`, `rules`, `--help`, `--version`). `rules --check` without `--fail-on-outdated` also exits 0 when newer releases exist or the sources cannot be reached. |
-| 1 | At least one invoice is invalid, or has warnings with `--warnings-as-errors`; or the command failed: unknown command or option, missing arguments, an unreadable file, `extract` on a file without embedded XML, `leitweg` with an invalid ID, or no command at all (help is printed). |
+| 1 | Findings. At least one invoice is invalid, or has warnings with `--warnings-as-errors`; this includes input that is not an invoice at all (`SUM-FORMAT`, `SUM-XML`). Also `leitweg` with an invalid ID. |
+| 2 | The command could not run: unknown command or flag, missing arguments, a file that cannot be read, `extract` on a file that is not a PDF or has no embedded XML, no command at all (help is printed), or an internal failure. No verdict was produced for the files that were not read. |
 | 3 | `summand rules --check --fail-on-outdated` found a newer upstream release of a bundled rule set. |
 
-Exit code 2 is reserved and not used. Scripts should treat any non-zero code as failure; to tell an invalid invoice from a failed run, use `--json` and read `valid`.
+The split is the same as in ESLint: 1 means the check ran and found problems, 2 means it could not run. With several files, `validate` still validates the readable ones when one path fails; the exit code is then 2, even if another file was invalid. A script that only needs pass or fail can test for non-zero; to tell the two apart, test for 1 and 2, or use `--json` and read `valid`.
 
 With `--json`, `validate` prints one line per file: the object `{ "file": "<path>", ...ValidationResult }`. The fields are part of the stable API.

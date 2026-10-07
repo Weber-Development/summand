@@ -38,7 +38,7 @@ export async function rulesCommand(argv: string[], io: Io, check: RuleSetCheckOp
   });
   if (values["fail-on-outdated"] && !values.check) {
     io.err("--fail-on-outdated needs --check.");
-    return EXIT_CODES.failed;
+    return EXIT_CODES.error;
   }
   const infos: RuleSetInfo[] = ruleSetInfo();
   const token = process.env.SUMMAND_GITHUB_TOKEN;

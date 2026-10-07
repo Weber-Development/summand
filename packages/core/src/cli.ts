@@ -38,7 +38,8 @@ Files can be UBL or CII XML (XRechnung, ZUGFeRD, Factur-X, Peppol) or ZUGFeRD / 
 
 Exit codes
   0  success: every invoice is valid
-  1  an invoice is invalid, or the command failed (usage error, unreadable file)
+  1  an invoice is invalid (or has warnings with --warnings-as-errors)
+  2  the command could not run: usage error, unknown flag, unreadable file
   3  rules --check --fail-on-outdated: a newer release exists
 
 rules options
@@ -54,8 +55,9 @@ const defaultIo: CliIo = {
 
 /**
  * Runs the `summand` command line with the given arguments (without `node` and the script name)
- * and resolves to the exit code: 0 on success, 1 when an invoice is invalid or the command
- * failed, 3 for `rules --check --fail-on-outdated` with a newer release. It never calls
+ * and resolves to the exit code: 0 on success, 1 when an invoice is invalid, 2 when the command
+ * could not run (usage error, unreadable file), 3 for `rules --check --fail-on-outdated` with a
+ * newer release. It never calls
  * `process.exit`. Output goes to `io` (default: stdout and stderr). `options.fetch` is only used
  * by `rules --check`.
  *
@@ -70,7 +72,7 @@ export async function runCli(
   const [command, ...rest] = argv;
   if (!command || command === "--help" || command === "-h" || command === "help") {
     io.out(HELP);
-    return command ? EXIT_CODES.ok : EXIT_CODES.failed;
+    return command ? EXIT_CODES.ok : EXIT_CODES.error;
   }
   if (command === "--version" || command === "-v" || command === "version") {
     io.out(pkg.version);
@@ -82,10 +84,10 @@ export async function runCli(
     if (command === "leitweg") return leitweg(rest, io);
     if (command === "rules") return await rulesCommand(rest, io, options);
     io.err(`Unknown command "${command}". Run "summand --help".`);
-    return EXIT_CODES.failed;
+    return EXIT_CODES.error;
   } catch (error) {
     io.err(error instanceof Error ? error.message : String(error));
-    return EXIT_CODES.failed;
+    return EXIT_CODES.error;
   }
 }
 
@@ -129,15 +131,24 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
   });
   if (values.lang !== undefined && values.lang !== "en" && values.lang !== "de") {
     io.err(`Unknown language "${values.lang}". Use --lang en or --lang de.`);
-    return EXIT_CODES.failed;
+    return EXIT_CODES.error;
   }
   if (positionals.length === 0) {
     io.err("No files given. Usage: summand validate <files...>");
-    return EXIT_CODES.failed;
+    return EXIT_CODES.error;
   }
-  let failed = false;
+  let invalid = false;
+  let errored = false;
   for (const file of positionals) {
-    const bytes = new Uint8Array(await readFile(file));
+    let bytes: Uint8Array;
+    try {
+      bytes = new Uint8Array(await readFile(file));
+    } catch (error) {
+      // An unreadable file is a run error (2), not a finding; keep going so one bad path does not hide the rest.
+      io.err(error instanceof Error ? error.message : String(error));
+      errored = true;
+      continue;
+    }
     const result = validateInvoice(bytes, {
       ...(values.xrechnung ? { xrechnung: true } : {}),
       ...(values["strict-extended"] ? { extended: "strict" as const } : {}),
@@ -146,7 +157,7 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
       ...(values.lang === "de" ? { lang: "de" as const } : {}),
     });
     if (!result.valid || (values["warnings-as-errors"] && result.warnings.length > 0))
-      failed = true;
+      invalid = true;
     if (values.json) {
       io.out(JSON.stringify({ file, ...result }));
       continue;
@@ -157,7 +168,8 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
     for (const m of result.errors) io.out(formatMessage(m, de));
     for (const m of result.warnings) io.out(formatMessage(m, de));
   }
-  return failed ? EXIT_CODES.failed : EXIT_CODES.ok;
+  if (errored) return EXIT_CODES.error;
+  return invalid ? EXIT_CODES.invalid : EXIT_CODES.ok;
 }
 
 async function extract(argv: string[], io: CliIo): Promise<number> {
@@ -169,17 +181,17 @@ async function extract(argv: string[], io: CliIo): Promise<number> {
   const file = positionals[0];
   if (!file) {
     io.err("Usage: summand extract <invoice.pdf> [--out <file.xml>]");
-    return EXIT_CODES.failed;
+    return EXIT_CODES.error;
   }
   const bytes = new Uint8Array(await readFile(file));
   if (!isPdf(bytes)) {
     io.err(`${file} is not a PDF.`);
-    return EXIT_CODES.failed;
+    return EXIT_CODES.error;
   }
   const extracted = extractInvoiceXml(bytes);
   if (!extracted) {
     io.err(`${file} contains no embedded invoice XML.`);
-    return EXIT_CODES.failed;
+    return EXIT_CODES.error;
   }
   if (values.out) {
     await writeFile(values.out, extracted.xml);
@@ -194,12 +206,12 @@ function leitweg(argv: string[], io: CliIo): number {
   const value = argv[0];
   if (!value) {
     io.err("Usage: summand leitweg <leitweg-id>");
-    return EXIT_CODES.failed;
+    return EXIT_CODES.error;
   }
   const parsed = parseLeitwegId(value);
   if (!parsed) {
     io.out(`${value}: not a Leitweg-ID (expected e.g. 04011000-1234512345-06)`);
-    return EXIT_CODES.failed;
+    return EXIT_CODES.invalid;
   }
   if (isValidLeitwegId(value)) {
     io.out(`${value}: valid Leitweg-ID`);
@@ -208,5 +220,5 @@ function leitweg(argv: string[], io: CliIo): number {
   io.out(
     `${value}: wrong check digits, expected ${leitwegCheckDigits(parsed.coarse, parsed.fine ?? "")}`,
   );
-  return EXIT_CODES.failed;
+  return EXIT_CODES.invalid;
 }

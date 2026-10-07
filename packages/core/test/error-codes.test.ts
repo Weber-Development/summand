@@ -197,6 +197,6 @@ describe("exit codes", () => {
       await run(["rules", "--check", "--fail-on-outdated"]),
     ];
     for (const code of codes) expect(documented).toContain(code);
-    expect(codes).toEqual([0, 1, 1, 1, 1, 0, 0, 0]);
+    expect(codes).toEqual([0, 2, 1, 2, 2, 0, 0, 0]);
   });
 });
