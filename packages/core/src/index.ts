@@ -1,5 +1,6 @@
 export {
   type Detection,
+  type DetectionError,
   detect,
   type Profile,
   type ProfileId,

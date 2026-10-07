@@ -7,6 +7,13 @@
 
 export type XNodeKind = "document" | "element" | "attribute" | "text" | "comment" | "pi";
 
+/**
+ * A node of a parsed XML document (document, element, attribute, text, comment or processing
+ * instruction). Read the fields `kind`, `ns`, `local`, `prefix`, `value`, `parent`, `children`,
+ * `attributes` and `line`; `order` and `namespaces` are used by the XPath engine and may change.
+ *
+ * @beta
+ */
 export interface XNode {
   kind: XNodeKind;
   /** Namespace URI (elements and attributes). */
@@ -28,6 +35,11 @@ export interface XNode {
   line: number;
 }
 
+/**
+ * Thrown by {@link parseXml} for malformed XML.
+ *
+ * @beta
+ */
 export class XmlError extends Error {
   constructor(
     message: string,
@@ -69,7 +81,13 @@ const ENTITIES: Record<string, string> = {
 const NAME_START = /[A-Za-z_:À-￿]/;
 const NAME_CHAR = /[A-Za-z0-9_:.\-·À-￿]/;
 
-/** Parses an XML document. Throws {@link XmlError} for malformed input. */
+/**
+ * Parses an XML document into the node tree the XPath engine works on. DTDs are skipped and never
+ * resolved, so external entities cannot be loaded.
+ *
+ * @throws {@link XmlError} for malformed input.
+ * @beta
+ */
 export function parseXml(source: string): XNode {
   let text = source;
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
@@ -335,7 +353,11 @@ export function documentElement(doc: XNode): XNode | undefined {
   return doc.children.find((c) => c.kind === "element");
 }
 
-/** String value of a node as defined by XPath. */
+/**
+ * String value of a node as defined by XPath.
+ *
+ * @beta
+ */
 export function stringValue(n: XNode): string {
   if (n.kind === "element" || n.kind === "document") {
     if (n.children.length === 1 && n.children[0]?.kind === "text") return n.children[0].value;
@@ -362,7 +384,12 @@ export function childElements(n: XNode, ns?: string, local?: string): XNode[] {
   );
 }
 
-/** A readable XPath to a node, with prefixes as written in the document, e.g. /Invoice/cac:InvoiceLine[2]/cbc:ID. */
+/**
+ * A readable XPath to a node, with prefixes as written in the document, e.g.
+ * /Invoice/cac:InvoiceLine[2]/cbc:ID.
+ *
+ * @beta
+ */
 export function nodePath(n: XNode): string {
   const parts: string[] = [];
   for (let x: XNode | null = n; x && x.kind !== "document"; x = x.parent) {

@@ -24,3 +24,7 @@
 1. Replace the XSD files in `packages/core/schemas-src/` (keep the `LICENSE.md` files, update their source notes).
 2. `pnpm schemas` (fails loudly on XSD constructs the compiler does not support), then `pnpm test`.
 3. Update `src/schemas/index.ts`, `NOTICE.md` and `docs/reference/rule-sets.md`; changeset (minor).
+
+## Changing the public API
+
+The API snapshots in `packages/core/test/api/` fail CI on any change to an export, its type, the CLI help or the exit codes. After an intended change: `pnpm --filter @sweberdev/summand exec vitest run -u test/api.test.ts`, review the diff of `test/api/`, update `docs/reference/api.md` (a test checks it lists exactly the exports) and describe the change in the changeset. A new `SUM-` code needs an entry in `docs/reference/error-codes.md` (also tested). Removing or renaming a stable export is a major change; deprecate first (`@deprecated Use ... Removed in N.0.0.`).

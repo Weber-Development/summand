@@ -6,6 +6,11 @@
 import type { Ast, Axis, NodeTest, SequenceType, Step } from "./ast";
 import { Decimal } from "./decimal";
 
+/**
+ * Thrown by {@link parseXPath} for an expression that is not valid XPath.
+ *
+ * @beta
+ */
 export class XPathSyntaxError extends Error {
   constructor(
     message: string,
@@ -165,6 +170,8 @@ export const FN_NS = "http://www.w3.org/2005/xpath-functions";
 /**
  * Parses an XPath expression. `namespaces` maps prefixes to URIs for name tests and function
  * names; function names come back as "fn:local", "xs:local" or "{uri}local".
+ *
+ * @beta
  */
 export function parseXPath(src: string, namespaces: ReadonlyMap<string, string>): Ast {
   const tokens = tokenize(src);

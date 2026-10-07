@@ -7,9 +7,13 @@
 
 const LEITWEG_RE = /^(\d{2,12})(?:-([A-Za-z0-9]{1,30}))?-(\d{2})$/;
 
+/** The parts of a Leitweg-ID. */
 export interface LeitwegId {
+  /** Coarse address, 2 to 12 digits. */
   coarse: string;
+  /** Fine address, up to 30 letters or digits, when present. */
   fine?: string;
+  /** The two check digits. */
   checkDigits: string;
 }
 

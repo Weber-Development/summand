@@ -5,23 +5,29 @@
  */
 import { inflateZlib } from "./inflate";
 
+/** A file embedded in a PDF (a PDF/A-3 associated file). */
 export interface EmbeddedFile {
   /** File name from the file specification, when it could be found. */
   name?: string;
   /** MIME type from /Subtype, e.g. "text/xml". */
   mimeType?: string;
+  /** The decoded file contents. */
   data: Uint8Array;
 }
 
+/** What {@link readPdf} found in a PDF. */
 export interface PdfInfo {
+  /** Embedded files, in the order they appear in the PDF. */
   files: EmbeddedFile[];
   /** Factur-X / ZUGFeRD conformance level declared in the XMP metadata (e.g. "EN 16931"). */
   xmpConformanceLevel?: string;
   /** Document file name declared in the XMP metadata (e.g. "factur-x.xml"). */
   xmpDocumentFileName?: string;
+  /** True when the PDF is encrypted; embedded files cannot be read then. */
   encrypted: boolean;
 }
 
+/** Thrown by {@link readPdf} and {@link extractInvoiceXml} when a PDF cannot be read. */
 export class PdfError extends Error {
   constructor(message: string) {
     super(message);
@@ -31,6 +37,7 @@ export class PdfError extends Error {
 
 const decoder = new TextDecoder("latin1");
 
+/** True when the bytes start like a PDF (`%PDF-` within the first kilobyte). */
 export function isPdf(bytes: Uint8Array): boolean {
   // %PDF- may follow a few bytes of junk; readers accept it within the first kilobyte.
   const head = decoder.decode(bytes.subarray(0, Math.min(1024, bytes.length)));
@@ -151,7 +158,11 @@ function decodeStream(bytes: Uint8Array, obj: RawObject): Uint8Array {
   return data;
 }
 
-/** Lists the embedded files of a PDF and the Factur-X information from its XMP metadata. */
+/**
+ * Lists the embedded files of a PDF and the Factur-X information from its XMP metadata.
+ *
+ * @throws {@link PdfError} when the PDF cannot be read.
+ */
 export function readPdf(bytes: Uint8Array): PdfInfo {
   if (!isPdf(bytes)) throw new PdfError("Not a PDF file");
   const text = decoder.decode(bytes);
@@ -250,6 +261,8 @@ const INVOICE_NAMES = [
 /**
  * Returns the invoice XML embedded in a ZUGFeRD / Factur-X PDF, or undefined when the PDF has no
  * embedded invoice.
+ *
+ * @throws {@link PdfError} when the PDF cannot be read.
  */
 export function extractInvoiceXml(
   bytes: Uint8Array,

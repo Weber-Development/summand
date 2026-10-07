@@ -4,14 +4,23 @@
  * request is a plain GET of a public release list. This module is a separate entry point
  * (`@sweberdev/summand/rules-check`) so that the main bundle does not carry it.
  */
+
+import type { RuleSetId } from "./rules/index";
 import info from "./rules/info.json";
 
+/**
+ * Result of checking one rule set: "up-to-date", "outdated" (a newer upstream release exists) or
+ * "unknown" (the check failed).
+ */
 export type RuleSetCheckStatus = "up-to-date" | "outdated" | "unknown";
 
+/** The outcome of checking one bundled rule set against its upstream project. */
 export interface RuleSetCheck {
-  id: string;
+  /** Id of the rule set, as in `RuleSetInfo.id`. */
+  id: RuleSetId;
   /** Version bundled with this Summand release. */
   version: string;
+  /** Whether the bundled version is current. */
   status: RuleSetCheckStatus;
   /** The newest release tag found upstream (set when `status` is "outdated"). */
   latest?: string;
@@ -19,13 +28,17 @@ export interface RuleSetCheck {
   reason?: string;
 }
 
-/** The part of the fetch API this module needs. Pass your own to run offline or behind a proxy. */
+/**
+ * The part of the fetch API {@link checkRuleSets} needs: a function from URL to a response with
+ * `ok`, `status` and `json()`. Pass your own to run offline or behind a proxy.
+ */
 export type FetchLike = (
   url: string,
   init?: { headers?: Record<string, string>; signal?: AbortSignal },
 ) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 
-export interface CheckOptions {
+/** Options of {@link checkRuleSets}. All are optional. */
+export interface RuleSetCheckOptions {
   /** Defaults to the global `fetch`. */
   fetch?: FetchLike;
   /** Per request, in milliseconds. Default 10000. */
@@ -33,6 +46,13 @@ export interface CheckOptions {
   /** Optional GitHub token to raise the API rate limit. It is only sent to api.github.com. */
   token?: string;
 }
+
+/**
+ * Former name of {@link RuleSetCheckOptions}.
+ *
+ * @deprecated Use `RuleSetCheckOptions`. The alias will be removed in 2.0.0.
+ */
+export type CheckOptions = RuleSetCheckOptions;
 
 // Release tags that name a rule set version. Others (for example tags of other artefacts in the
 // same repository) are ignored.
@@ -56,7 +76,11 @@ interface Latest {
   version: string;
 }
 
-async function getJson(fetchFn: FetchLike, url: string, options: CheckOptions): Promise<unknown[]> {
+async function getJson(
+  fetchFn: FetchLike,
+  url: string,
+  options: RuleSetCheckOptions,
+): Promise<unknown[]> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
@@ -94,7 +118,7 @@ function newest(entries: unknown[], field: string, pattern: RegExp): Latest | un
 async function latestRelease(
   fetchFn: FetchLike,
   repository: string,
-  options: CheckOptions,
+  options: RuleSetCheckOptions,
 ): Promise<Latest> {
   const pattern = TAGS[repository] as RegExp;
   const base = `https://api.github.com/repos/${repository}`;
@@ -112,11 +136,11 @@ async function latestRelease(
  * Checks every bundled rule set against the newest upstream release. Never throws for network
  * problems: a failed check is reported as `status: "unknown"` with a reason.
  */
-export async function checkRuleSets(options: CheckOptions = {}): Promise<RuleSetCheck[]> {
+export async function checkRuleSets(options: RuleSetCheckOptions = {}): Promise<RuleSetCheck[]> {
   const fetchFn: FetchLike | undefined =
     options.fetch ?? (typeof fetch === "function" ? (fetch as unknown as FetchLike) : undefined);
   const sets = Object.values(info) as Array<{
-    id: string;
+    id: RuleSetId;
     version: string;
     source: string;
   }>;

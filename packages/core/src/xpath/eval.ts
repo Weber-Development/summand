@@ -7,6 +7,12 @@ import { stringValue, type XNode } from "../xml";
 import type { Ast, Axis, NodeTest, SequenceType, Step } from "./ast";
 import { Decimal } from "./decimal";
 
+/**
+ * Thrown when an XPath expression cannot be evaluated. `code` is the XPath error code, e.g.
+ * "FORG0001" (invalid value for a cast).
+ *
+ * @beta
+ */
 export class XPathError extends Error {
   constructor(
     readonly code: string,
@@ -17,7 +23,10 @@ export class XPathError extends Error {
   }
 }
 
-/** Atomized value of a node: an xs:untypedAtomic. */
+/** Atomized value of a node: an xs:untypedAtomic.
+ *
+ * @beta
+ */
 export class Untyped {
   constructor(readonly value: string) {}
   toString(): string {
@@ -25,7 +34,10 @@ export class Untyped {
   }
 }
 
-/** xs:date or xs:dateTime. `key` sorts chronologically for values without time zone. */
+/** xs:date or xs:dateTime. `key` sorts chronologically for values without time zone.
+ *
+ * @beta
+ */
 export class XDate {
   constructor(
     readonly type: "date" | "dateTime",
@@ -37,16 +49,41 @@ export class XDate {
   }
 }
 
+/** An XPath atomic value: string, boolean, double, decimal, untyped or date.
+ *
+ * @beta
+ */
 export type Atomic = string | boolean | number | Decimal | Untyped | XDate;
+/** An XPath item: a node or an atomic value.
+ *
+ * @beta
+ */
 export type Item = XNode | Atomic;
+/** An XPath sequence (a flat list of items).
+ *
+ * @beta
+ */
 export type Sequence = Item[];
 
+/**
+ * True when the item is a node.
+ *
+ * @beta
+ */
 export function isNode(v: Item | undefined): v is XNode {
   return typeof v === "object" && v !== null && "children" in v && "kind" in v;
 }
 
+/** An XPath function implementation, as registered in the function library.
+ *
+ * @beta
+ */
 export type XPathFunction = (env: Env, args: Sequence[]) => Sequence;
 
+/** The dynamic context an expression is evaluated in.
+ *
+ * @beta
+ */
 export interface Env {
   item: Item | undefined;
   position: number;
@@ -66,12 +103,22 @@ export interface Env {
 // ---------------------------------------------------------------------------------------------
 // Conversions
 
+/**
+ * Atomizes a sequence: nodes become untyped values.
+ *
+ * @beta
+ */
 export function atomize(seq: Sequence): Atomic[] {
   const out: Atomic[] = [];
   for (const v of seq) out.push(isNode(v) ? new Untyped(stringValue(v)) : v);
   return out;
 }
 
+/**
+ * String value of one item.
+ *
+ * @beta
+ */
 export function stringOf(v: Item): string {
   if (isNode(v)) return stringValue(v);
   if (typeof v === "string") return v;
@@ -184,6 +231,11 @@ export function toDateTime(v: Atomic): XDate {
 }
 
 /** Effective boolean value. */
+/**
+ * Effective boolean value of a sequence.
+ *
+ * @beta
+ */
 export function ebv(seq: Sequence): boolean {
   if (seq.length === 0) return false;
   const first = seq[0] as Item;
@@ -901,6 +953,11 @@ function instanceOf(seq: Sequence, type: SequenceType): boolean {
   });
 }
 
+/**
+ * Evaluates a parsed expression in an {@link Env}.
+ *
+ * @beta
+ */
 export function evaluate(ast: Ast, env: Env): Sequence {
   switch (ast.t) {
     case "num":

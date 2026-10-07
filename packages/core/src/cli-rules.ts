@@ -1,6 +1,7 @@
 import { parseArgs } from "node:util";
+import { EXIT_CODES } from "./exit-codes";
 import { type RuleSetInfo, ruleSetInfo } from "./rules/index";
-import { type CheckOptions, checkRuleSets, type RuleSetCheck } from "./rules-check";
+import { checkRuleSets, type RuleSetCheck, type RuleSetCheckOptions } from "./rules-check";
 
 interface Io {
   out: (line: string) => void;
@@ -26,7 +27,7 @@ function describe(check: RuleSetCheck): string {
 }
 
 /** `summand rules [--json] [--check] [--fail-on-outdated]` */
-export async function rulesCommand(argv: string[], io: Io, check: CheckOptions = {}) {
+export async function rulesCommand(argv: string[], io: Io, check: RuleSetCheckOptions = {}) {
   const { values } = parseArgs({
     args: argv,
     options: {
@@ -37,7 +38,7 @@ export async function rulesCommand(argv: string[], io: Io, check: CheckOptions =
   });
   if (values["fail-on-outdated"] && !values.check) {
     io.err("--fail-on-outdated needs --check.");
-    return 1;
+    return EXIT_CODES.failed;
   }
   const infos: RuleSetInfo[] = ruleSetInfo();
   const token = process.env.SUMMAND_GITHUB_TOKEN;
@@ -78,5 +79,5 @@ export async function rulesCommand(argv: string[], io: Io, check: CheckOptions =
     }
     for (const line of table([header, ...rows])) io.out(line);
   }
-  return outdated && values["fail-on-outdated"] ? 3 : 0;
+  return outdated && values["fail-on-outdated"] ? EXIT_CODES.outdated : EXIT_CODES.ok;
 }
