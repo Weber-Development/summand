@@ -13,7 +13,7 @@ INVALID invoices/RE-1002.pdf  EN 16931 (PDF)  1 error(s), 2 warning(s)
   error   BR-CO-15 (line 214): Invoice total amount with VAT (BT-112) = Invoice total amount without VAT (BT-109) + Invoice total VAT amount (BT-110).
 ```
 
-The exit code is 1 when at least one invoice is invalid, so it can guard a CI step or a script. All exit codes are listed [below](#exit-codes).
+The exit code is 1 when at least one invoice is invalid and 2 when the command could not run (for example a file that does not exist), so it can guard a CI step or a script. All exit codes are listed [below](#exit-codes).
 
 ## Commands
 
@@ -43,10 +43,11 @@ The exit code is 1 when at least one invoice is invalid, so it can guard a CI st
 | Code | Meaning |
 |---|---|
 | 0 | Success: every invoice is valid |
-| 1 | An invoice is invalid (or has warnings with `--warnings-as-errors`), or the command failed: unknown command or option, missing arguments, unreadable file |
+| 1 | An invoice is invalid (or has warnings with `--warnings-as-errors`), including input that is not an invoice at all |
+| 2 | The command could not run: unknown command or flag, missing arguments, unreadable file |
 | 3 | `rules --check --fail-on-outdated`: a newer release of a bundled rule set exists |
 
-Code 2 is reserved. To tell an invalid invoice from a failed run, use `--json` and read `valid`. Details: [Error codes](../reference/error-codes.md#exit-codes-of-the-summand-command).
+The codes follow ESLint: 1 is a finding, 2 is an error running the command. If one of several files cannot be read, the others are still validated and the exit code is 2. To tell an invalid invoice from a failed run in a script, test for 1 and 2 separately. Details: [Error codes](../reference/error-codes.md#exit-codes-of-the-summand-command).
 
 ## JSON output
 

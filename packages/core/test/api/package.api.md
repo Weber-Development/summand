@@ -12,7 +12,8 @@
 
 ## exit codes
 - 0 ok
-- 1 failed
+- 1 invalid
+- 2 error
 - 3 outdated
 
 ## summand --help
@@ -42,7 +43,8 @@ Files can be UBL or CII XML (XRechnung, ZUGFeRD, Factur-X, Peppol) or ZUGFeRD / 
 
 Exit codes
   0  success: every invoice is valid
-  1  an invoice is invalid, or the command failed (usage error, unreadable file)
+  1  an invoice is invalid (or has warnings with --warnings-as-errors)
+  2  the command could not run: usage error, unknown flag, unreadable file
   3  rules --check --fail-on-outdated: a newer release exists
 
 rules options

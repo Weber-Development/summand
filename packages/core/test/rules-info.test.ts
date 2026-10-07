@@ -172,6 +172,6 @@ describe("rule set update check", () => {
 
     const json = JSON.parse((await run(["rules", "--check", "--json"], newer)).out);
     expect(json[3].check).toEqual({ status: "outdated", latest: "v2.7.0" });
-    expect((await run(["rules", "--fail-on-outdated"])).code).toBe(1);
+    expect((await run(["rules", "--fail-on-outdated"])).code).toBe(2);
   });
 });

@@ -29,7 +29,7 @@ describe("cli", () => {
     const ok = await run(["validate", "--lang", "de", valid]);
     expect(ok.out).toMatch(/^gültig {3}.*0 Fehler, 0 Warnung\(en\)/m);
     const bad = await run(["validate", "--lang", "fr", valid]);
-    expect(bad.code).toBe(1);
+    expect(bad.code).toBe(2);
     expect(bad.err).toContain("--lang de");
   });
 
@@ -91,6 +91,40 @@ describe("cli", () => {
 
   it("shows help", async () => {
     expect((await run(["--help"])).out).toContain("summand validate");
-    expect((await run([])).code).toBe(1);
+    expect((await run([])).code).toBe(2);
+  });
+
+  it("separates findings (1) from errors running the command (2)", async () => {
+    // not an invoice at all: a finding
+    const notInvoice = await run(["validate", join(fixtures, "pdf/zugferd_invoice.pdf")]);
+    expect(notInvoice.code).toBe(1);
+    // unreadable path, unknown flag, missing files, unknown command: the command could not run
+    const missing = await run(["validate", join(fixtures, "does-not-exist.xml")]);
+    expect(missing.code).toBe(2);
+    expect(missing.err).toContain("ENOENT");
+    expect((await run(["validate", "--nope", valid])).code).toBe(2);
+    expect((await run(["validate"])).code).toBe(2);
+    expect((await run(["nonsense"])).code).toBe(2);
+    expect((await run([])).code).toBe(2);
+    expect((await run(["extract"])).code).toBe(2);
+    expect((await run(["extract", valid])).code).toBe(2);
+    expect((await run(["leitweg"])).code).toBe(2);
+    expect((await run(["rules", "--fail-on-outdated"])).code).toBe(2);
+    // an error wins over findings, and the other files are still validated
+    const both = await run(["validate", join(fixtures, "nope.xml"), valid]);
+    expect(both.code).toBe(2);
+    expect(both.out).toMatch(/^valid {3}/m);
+    // leitweg: a wrong ID is a finding
+    expect((await run(["leitweg", "not-an-id"])).code).toBe(1);
+  });
+
+  it("counts warnings as findings with --warnings-as-errors", async () => {
+    const withWarning = join(
+      fixtures,
+      "xrechnung-testsuite/business-cases/standard/01.06a-INVOICE_ubl.xml",
+    );
+    expect((await run(["validate", withWarning])).code).toBe(0);
+    expect((await run(["validate", "--warnings-as-errors", withWarning])).code).toBe(1);
+    expect((await run(["validate", "--warnings-as-errors", valid])).code).toBe(0);
   });
 });

@@ -1,13 +1,46 @@
 ---
 title: Migration and stability
-description: Upgrade notes from 0.1 to 0.9 and 1.0, and the stability policy of the 1.x versions - what SemVer covers, how rule set updates and verdict changes are released.
+description: Upgrade notes up to 1.0, the one breaking change in 1.0.0 (CLI exit codes) and the stability policy of the 1.x versions - what SemVer covers, how rule set updates and verdict changes are released.
 ---
 
-Summand 0.9 is the release candidate for 1.0. It has the API that 1.0.0 will have. Between 0.9.0 and 1.0.0 only bug fixes and documentation change, so you can move to 0.9 now and the step to 1.0.0 is a version bump.
+Summand 1.0.0 is the first stable release. From here on the stability policy below applies. The API is the one 0.9 had; the only breaking change is in the exit codes of the `summand` command.
 
-## Upgrading to 0.9 and 1.0
+## Breaking change in 1.0.0: exit codes
 
-**From 0.4:** no code changes needed. One name is deprecated, see [What changed in 0.9.0](#what-changed-in-090).
+The CLI now splits exit codes like ESLint. Before, exit code 1 meant both "an invoice is invalid" and "the command could not run". Now:
+
+| Situation | Before 1.0 | 1.0 |
+|---|---|---|
+| Every invoice valid | 0 | 0 |
+| An invoice is invalid, warnings with `--warnings-as-errors`, or the input is not an invoice (`SUM-FORMAT`, `SUM-XML`, `SUM-PDF`) | 1 | 1 |
+| `leitweg` with an invalid ID | 1 | 1 |
+| Unknown command or flag, missing arguments (including `--lang fr`), no command at all | 1 | **2** |
+| A file that cannot be read (does not exist, no permission) | 1 | **2** |
+| `extract` on a file that is not a PDF or has no embedded XML | 1 | **2** |
+| `rules --check --fail-on-outdated` and a newer release exists | 3 | 3 |
+
+Also, `validate` no longer stops at the first unreadable file: it validates the other files, reports the unreadable one on stderr and exits with 2 (an error wins over findings).
+
+**What to do with your scripts.**
+
+- `summand validate ... || exit 1` or `if ! summand validate ...`: nothing to change; any non-zero code still fails.
+- `[ $? -eq 1 ]` or `if [ "$code" == 1 ]` to detect "invoice invalid": that now matches only real findings. A typo in a path used to look like an invalid invoice; it is now 2. Decide what 2 should mean in your pipeline (usually: fail the build and fix the script), and handle it explicitly:
+
+```bash
+summand validate invoices/*.xml
+case $? in
+  0) echo "all valid" ;;
+  1) echo "invalid invoices found"; exit 1 ;;
+  *) echo "summand could not run"; exit 2 ;;
+esac
+```
+
+- Code that calls `runCli` receives the same numbers. `EXIT_CODES` is internal; do not import it.
+- Code that treated "not 0" as "invalid invoice" and showed that to users should now tell exit 2 apart, or read `valid` from `--json` output as before. `--json` output itself is unchanged.
+
+## Upgrading to 1.0 from older versions
+
+**From 0.4 to 0.9:** no code changes needed. One name is deprecated, see [What changed in 0.9.0](#what-changed-in-090). Then read the exit code change above if you use the CLI in scripts.
 
 **From 0.3 or older:** also read the 0.4 notes; there is nothing to change either.
 
@@ -18,7 +51,8 @@ Summand 0.9 is the release candidate for 1.0. It has the API that 1.0.0 will hav
 | 0.1.0 | 0.2.0: `lang` option and `--lang` flag for German messages. Additive. | Nothing. |
 | 0.2.x | 0.3.0: `validateInvoice` checks the XML Schema of the syntax before the rules, like the KoSIT validator. Invoices that broke the schema but passed the rules (a date as `04.04.2016`, elements in the wrong order) now have errors with the id `SUM-XSD`. New `schemas` field in the result, new option `schema`, flag `--no-schema`, new export `validateSchema`. | Fix the invoices. Only if you must keep the old verdict for now, pass `schema: false` / `--no-schema`. Handle `SUM-XSD` in code that switches on message ids. |
 | 0.3.x | 0.4.0: `ruleSetInfo()`, `RULE_SETS`, `summand rules`, `rules --check` and `@sweberdev/summand/rules-check`; much faster validation of large invoices. Additive; results and messages are unchanged. | Nothing. |
-| 0.4.x | 0.9.0: see below. No removals. | Rename `CheckOptions` to `RuleSetCheckOptions` if you import it. |
+| 0.4.x to 0.9.x | 0.9.0: see below. No removals. | Rename `CheckOptions` to `RuleSetCheckOptions` if you import it. |
+| 0.9.x | 1.0.0: CLI exit code 2 for errors running the command, see above. No API changes. | Check scripts that test for exit code 1. |
 
 Check an upgrade by running your invoices before and after and comparing `result.ruleSets` (the rule set versions are part of every result) and the ids in `errors` and `warnings`.
 
@@ -34,7 +68,7 @@ No export, option, field, flag, message id or exit code was removed or changed i
 | `summand --version` (`-v`) | Addition | Prints the version. |
 | `summand validate --no-leitweg` | Addition | The CLI counterpart of `leitwegId: false`, which had no flag. |
 | Advanced exports marked `@beta` | Documentation | The compiled rule and schema formats, the XML node tree and the XPath entry point expose internals. They are listed as [advanced](../reference/api.md#advanced-beta) and may change in a minor release. Everything else is stable. |
-| [Error codes](../reference/error-codes.md) | Documentation | All `SUM-` codes with severity, meaning, cause and fix, and the exit codes (0, 1, 3) of the CLI. A test fails when a code is missing there. |
+| [Error codes](../reference/error-codes.md) | Documentation | All `SUM-` codes with severity, meaning, cause and fix, and the exit codes (0, 1, 2, 3) of the CLI. A test fails when a code is missing there. |
 | TSDoc on every export | Documentation | Hover text and docs match [the API reference](../reference/api.md), checked by a test. |
 | API snapshot test | Internal | CI fails when the exports, their types, the CLI help or the exit codes change without the snapshot being updated on purpose. |
 
@@ -51,7 +85,7 @@ From 1.0.0 Summand follows [Semantic Versioning](https://semver.org). `MAJOR.MIN
 - Every export of `@sweberdev/summand`, `@sweberdev/summand/rules-check` and `@sweberdev/summand/cli` that is not marked `@beta`: names, parameters, return and option types, and the behaviour the TSDoc and these docs describe. Adding an optional option or a field to a result is a minor change, so do not treat results as closed objects; add `default` branches when you switch on `ProfileId`, `SchemaFindingKind` or `Syntax`.
 - The `ValidationResult` and `ValidationMessage` shape, including the field names of the `--json` output (`{ file, ...result }`).
 - The `SUM-` codes: their ids, their severities and what they mean. A code is never reused. New codes appear in minor releases, see below.
-- The `summand` command: commands, flags and the exit codes 0, 1 and 3. New commands and flags are minor; a flag never changes meaning.
+- The `summand` command: commands, flags and the exit codes 0, 1, 2 and 3. New commands and flags are minor; a flag never changes meaning.
 - The package entry points (`exports` of `package.json`) and the `summand` binary.
 - Node.js 20 and newer. Dropping a Node.js version is a major change.
 

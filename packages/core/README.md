@@ -34,7 +34,7 @@ npx @sweberdev/summand validate invoices/*.xml invoices/*.pdf
 - Rule id, severity, XPath and line for every message, plus an invoice summary
 - Messages in English or German (`lang: "de"`, CLI `--lang de`) for every rule
 - Leitweg-ID check digits
-- CLI with JSON output and exit codes
+- CLI with JSON output and ESLint-style exit codes (0 valid, 1 invalid, 2 error running the command)
 - Schematron and XPath 2.0 engine usable for your own rules
 - About 137 KB gzipped with all rule sets, schemas and both languages
 
