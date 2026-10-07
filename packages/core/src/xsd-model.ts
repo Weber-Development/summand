@@ -109,6 +109,12 @@ export interface ComplexTypeDef {
 
 export type TypeDef = SimpleTypeDef | ComplexTypeDef;
 
+/**
+ * A compiled XML Schema in the compact JSON form produced by `pnpm schemas`. The format is an
+ * implementation detail of the schema validator and may change in a minor release.
+ *
+ * @beta
+ */
 export interface SchemaModel {
   /** Namespace URIs; names refer to them as "index:local". "" is the absent namespace. */
   ns: string[];

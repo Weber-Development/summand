@@ -2,13 +2,19 @@ import type { SchemaModel } from "../xsd-model";
 import cii from "./cii.json";
 import ubl from "./ubl.json";
 
+/** Id of a bundled XML Schema: UBL 2.1 or UN/CEFACT CII D16B. */
 export type SchemaId = "ubl-2.1" | "cii-d16b";
 
+/** Metadata of a bundled XML Schema. */
 export interface SchemaInfo {
   id: SchemaId;
+  /** Human-readable name. */
   name: string;
+  /** Version of the schema. */
   version: string;
+  /** Where the schema is published. */
   source: string;
+  /** Licence or copyright notice of the schema files. */
   license: string;
 }
 

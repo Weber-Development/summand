@@ -48,7 +48,11 @@ const num = (seq: Sequence | undefined): Atomic | undefined => {
   return a instanceof Untyped ? toDouble(a) : a;
 };
 
-/** Translates an XML Schema / XPath regular expression to a JavaScript RegExp. */
+/**
+ * Translates an XML Schema / XPath regular expression to a JavaScript RegExp.
+ *
+ * @beta
+ */
 export function xpathRegex(pattern: string, flags = "", global = false): RegExp {
   let source = pattern;
   if (flags.includes("x")) source = source.replace(/\s+/g, "");
@@ -418,4 +422,9 @@ for (const type of [
   };
 }
 
+/**
+ * The built-in function library (fn: and xs: functions), keyed like "{uri}local#arity".
+ *
+ * @beta
+ */
 export const builtinFunctions: ReadonlyMap<string, XPathFunction> = new Map(Object.entries(fns));

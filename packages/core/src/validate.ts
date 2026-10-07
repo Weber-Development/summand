@@ -8,15 +8,27 @@ import { type InvoiceSummary, summarize } from "./summary";
 import { parseXml, XmlError, type XNode } from "./xml";
 import { validateSchema } from "./xsd";
 
+/**
+ * How serious a {@link ValidationMessage} is. Messages are sorted into `errors`, `warnings` and
+ * `infos` of the result by this value. Schematron flags map as `fatal` and `error` to "error",
+ * `warning` to "warning" and `information` to "info" (see {@link Flag}).
+ */
 export type Severity = "error" | "warning" | "info";
 
+/**
+ * One finding of a validation: a violated rule, a schema violation or one of Summand's own
+ * checks. Every `id` starting with `SUM-` is listed in the error code catalogue
+ * (docs/reference/error-codes.md); other ids are rule ids of the bundled rule sets.
+ */
 export interface ValidationMessage {
   /**
-   * Rule id, e.g. "BR-CO-10", "BR-DE-15", or "SUM-…" for Summand's own checks ("SUM-XSD" for XML
-   * Schema violations).
+   * Rule id, e.g. "BR-CO-10" or "BR-DE-15" for a rule of a rule set, or a "SUM-" code for
+   * Summand's own checks (for example "SUM-XSD" for XML Schema violations).
    */
   id: string;
+  /** Decides whether the message is in `errors`, `warnings` or `infos` of the result. */
   severity: Severity;
+  /** Human-readable text in the language of the `lang` option (rule texts as published). */
   message: string;
   /** XPath of the element the rule refers to. */
   location?: string;
@@ -28,11 +40,19 @@ export interface ValidationMessage {
   evaluationError?: string;
 }
 
+/**
+ * The outcome of {@link validateInvoice}. The shape is the same for every input, including inputs
+ * that are not invoices: those come back as `valid: false` with a `SUM-` error and without
+ * `syntax`, `profile` and `summary`.
+ */
 export interface ValidationResult {
   /** True when there are no errors. Warnings and infos do not make an invoice invalid. */
   valid: boolean;
+  /** Syntax of the document. Not set when the document is not a recognised invoice. */
   syntax?: Syntax;
+  /** Profile from the specification identifier (BT-24). Not set when not recognised as invoice. */
   profile?: Profile;
+  /** Where the invoice XML came from. */
   source: {
     type: "xml" | "pdf";
     /** Name of the embedded XML file in a PDF. */
@@ -44,19 +64,26 @@ export interface ValidationResult {
   ruleSets: RuleSetInfo[];
   /** XML Schemas the invoice was validated against (empty with `schema: false`). */
   schemas: SchemaInfo[];
+  /** Findings with severity "error". The invoice is invalid when this is not empty. */
   errors: ValidationMessage[];
+  /** Findings with severity "warning". */
   warnings: ValidationMessage[];
+  /** Findings with severity "info". */
   infos: ValidationMessage[];
+  /** Key facts of the invoice. Not set when the document is not a recognised invoice. */
   summary?: InvoiceSummary;
-  /** The invoice XML (extracted from the PDF when the input was a PDF). */
+  /** The invoice XML (extracted from the PDF when the input was a PDF). Only with `includeXml`. */
   xml?: string;
+  /** Time the validation took, in milliseconds. */
   durationMs: number;
 }
 
+/** Options of {@link validateInvoice}. All are optional. */
 export interface ValidateOptions {
   /**
    * Which rule sets to apply. "auto" (default) applies EN 16931 for the detected syntax and the
-   * XRechnung rules when the document declares XRechnung.
+   * XRechnung rules when the document declares XRechnung. Not to be confused with
+   * `ValidationResult.ruleSets`, which lists the rule sets that were applied.
    */
   ruleSets?: "auto" | RuleSetId[];
   /** Apply the XRechnung rules even when the invoice does not declare XRechnung. */
@@ -84,6 +111,7 @@ export interface ValidateOptions {
   lang?: "en" | "de";
 }
 
+/** What {@link validateInvoice} accepts: XML text, or bytes of an XML file or a ZUGFeRD / Factur-X PDF. */
 export type InvoiceInput = string | Uint8Array | ArrayBuffer;
 
 function now(): number {
@@ -215,7 +243,11 @@ function levelOverrides(detection: Detection, ids: RuleSetId[]): Record<string, 
   return XRECHNUNG_LEVELS[kind][detection.syntax === "cii" ? "cii" : "ubl"];
 }
 
-/** Rule sets "auto" picks for a detected document. */
+/**
+ * The rule sets `ruleSets: "auto"` applies to a detected document: EN 16931 for the syntax, plus
+ * XRechnung when the profile is an XRechnung profile or `options.xrechnung` is set. Empty for
+ * profiles that are not EN 16931 compliant (MINIMUM, BASIC WL).
+ */
 export function ruleSetsFor(
   detection: Detection,
   options: Pick<ValidateOptions, "xrechnung"> = {},
@@ -231,6 +263,13 @@ export function ruleSetsFor(
 /**
  * Validates an e-invoice: UBL or CII XML (XRechnung, ZUGFeRD, Factur-X, Peppol) given as a string
  * or bytes, or a ZUGFeRD / Factur-X PDF given as bytes.
+ *
+ * Synchronous. Never throws for bad input: unreadable PDFs, malformed XML and documents that are
+ * not invoices are reported as errors with a "SUM-" code in the result.
+ *
+ * @example
+ * const result = validateInvoice(xml, { lang: "de" });
+ * if (!result.valid) console.log(result.errors[0]?.id);
  */
 export function validateInvoice(
   input: InvoiceInput,

@@ -1,4 +1,7 @@
-/** The XPath 2.0 engine Summand uses for Schematron, for direct use on parsed documents. */
+/**
+ * The XPath 2.0 engine Summand uses for Schematron, for direct use on parsed documents. Everything
+ * in this entry point is advanced API (`@beta`): it may change in a minor release.
+ */
 export type { Ast } from "./xpath/ast";
 export { Decimal } from "./xpath/decimal";
 export {
@@ -26,7 +29,11 @@ import { parseXPath as parse } from "./xpath/parser";
 
 /**
  * Evaluates an XPath expression against a node. `namespaces` maps the prefixes used in the
- * expression to namespace URIs.
+ * expression to namespace URIs, `variables` binds `$name` variables.
+ *
+ * @throws {@link XPathSyntaxError} for an invalid expression, {@link XPathError} when it cannot
+ * be evaluated.
+ * @beta
  */
 export function select(
   expression: string,

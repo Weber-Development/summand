@@ -29,6 +29,11 @@ export interface SequenceType {
   empty?: boolean;
 }
 
+/**
+ * Syntax tree of a parsed XPath expression. The node shapes are an implementation detail.
+ *
+ * @beta
+ */
 export type Ast =
   | { t: "num"; v: Decimal | number }
   | { t: "str"; v: string }

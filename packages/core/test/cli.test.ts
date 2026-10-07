@@ -67,6 +67,28 @@ describe("cli", () => {
     expect(wrong.out).toContain("expected 06");
   });
 
+  it("skips the Leitweg-ID check with --no-leitweg", async () => {
+    const file = join(mkdtempSync(join(tmpdir(), "summand-")), "invoice.xml");
+    writeFileSync(
+      file,
+      readFileSync(valid, "utf8").replace(
+        /<cbc:BuyerReference>[^<]*</,
+        "<cbc:BuyerReference>04011000-12345-34<",
+      ),
+    );
+    expect((await run(["validate", file])).out).toContain("SUM-LEITWEG");
+    expect((await run(["validate", "--no-leitweg", file])).out).not.toContain("SUM-LEITWEG");
+  });
+
+  it("prints the version", async () => {
+    const version = JSON.parse(readFileSync(join(__dirname, "../package.json"), "utf8")).version;
+    for (const flag of ["--version", "-v", "version"]) {
+      const r = await run([flag]);
+      expect(r.code).toBe(0);
+      expect(r.out).toBe(version);
+    }
+  });
+
   it("shows help", async () => {
     expect((await run(["--help"])).out).toContain("summand validate");
     expect((await run([])).code).toBe(1);

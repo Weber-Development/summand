@@ -11,8 +11,13 @@ export const NS = {
   zugferd1: "urn:ferd:CrossIndustryDocument:invoice:1p0",
 } as const;
 
+/** The XML syntax of an invoice: UBL Invoice, UBL Credit Note or UN/CEFACT Cross Industry Invoice. */
 export type Syntax = "ubl-invoice" | "ubl-creditnote" | "cii";
 
+/**
+ * Identifier of a recognised profile. New ids may be added in a minor release, so handle unknown
+ * values (a `switch` with a `default`).
+ */
 export type ProfileId =
   | "xrechnung"
   | "xrechnung-extension"
@@ -25,7 +30,9 @@ export type ProfileId =
   | "factur-x-minimum"
   | "unknown";
 
+/** A profile (customization) of EN 16931 recognised from the specification identifier (BT-24). */
 export interface Profile {
+  /** Stable identifier to switch on. */
   id: ProfileId;
   /** Human readable name, e.g. "XRechnung 3.0" or "ZUGFeRD / Factur-X EN 16931". */
   label: string;
@@ -35,18 +42,30 @@ export interface Profile {
   en16931: boolean;
 }
 
+/** Result of {@link detect} for a document that is an invoice. */
 export interface Detection {
+  /** Syntax of the document. */
   syntax: Syntax;
+  /** Profile from the specification identifier. */
   profile: Profile;
 }
 
+/**
+ * What {@link detect} returns instead of a {@link Detection}: "not-an-invoice" when the root element
+ * is none of UBL Invoice, UBL CreditNote or CrossIndustryInvoice, "zugferd-1" for ZUGFeRD 1.0,
+ * which is not supported.
+ */
 export type DetectionError = "not-an-invoice" | "zugferd-1";
 
 function child(n: XNode | undefined, ns: string, local: string): XNode | undefined {
   return n?.children.find((c) => c.kind === "element" && c.ns === ns && c.local === local);
 }
 
-/** Recognises the syntax (UBL Invoice, UBL Credit Note, CII) and the profile of a parsed document. */
+/**
+ * Recognises the syntax (UBL Invoice, UBL Credit Note, CII) and the profile of a parsed document
+ * (see {@link parseXml}). Returns a {@link DetectionError} string when the document is not a
+ * supported invoice; check with `typeof result === "string"`.
+ */
 export function detect(doc: XNode): Detection | DetectionError {
   const root = documentElement(doc);
   if (!root) return "not-an-invoice";

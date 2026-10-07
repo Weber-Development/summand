@@ -57,7 +57,7 @@ Each message has:
 | `ruleSet` | `"en16931-ubl"`, `"xrechnung-cii"`, … or `"summand"` |
 | `evaluationError` | Set when the rule could not be evaluated, e.g. an amount that is not a number. The rule then counts as failed. |
 
-Rule ids starting with `SUM-` are Summand's own checks:
+Rule ids starting with `SUM-` are Summand's own checks. Each is described with cause and fix in the [error code catalogue](../reference/error-codes.md):
 
 | Id | Meaning |
 |---|---|

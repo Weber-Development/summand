@@ -16,7 +16,8 @@
         "guides/browser",
         "guides/cli",
         "guides/leitweg-id",
-        "guides/schematron"
+        "guides/schematron",
+        "guides/migration-1.0"
       ]
     },
     {
@@ -25,7 +26,7 @@
     },
     {
       "label": "Reference",
-      "items": ["reference/api", "reference/rule-sets"]
+      "items": ["reference/api", "reference/error-codes", "reference/rule-sets"]
     }
   ]
 }

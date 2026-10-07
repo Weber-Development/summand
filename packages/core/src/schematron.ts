@@ -21,6 +21,13 @@ import { parseXPath } from "./xpath/parser";
 const SCH_NS = "http://purl.oclc.org/dsdl/schematron";
 const XSL_NS = "http://www.w3.org/1999/XSL/Transform";
 
+/**
+ * Severity flag of a Schematron rule as written in the rule set. {@link validateInvoice} turns it
+ * into a {@link Severity}: "fatal" and "error" become "error", "warning" stays, "information"
+ * becomes "info".
+ *
+ * @beta
+ */
 export type Flag = "fatal" | "error" | "warning" | "information";
 
 /** Part of an assertion message: literal text, the context node's name, or an XPath value. */
@@ -58,6 +65,12 @@ export interface CompiledFunction {
   select: string;
 }
 
+/**
+ * A Schematron schema compiled to plain JSON by {@link compileSchematron}. The format is an
+ * implementation detail; treat it as opaque and pass it to {@link runSchematron}.
+ *
+ * @beta
+ */
 export interface CompiledRuleSet {
   id: string;
   title: string;
@@ -67,10 +80,17 @@ export interface CompiledRuleSet {
   patterns: CompiledPattern[];
 }
 
+/**
+ * A failed assertion (or fired report) of a Schematron rule set.
+ *
+ * @beta
+ */
 export interface SchematronFinding {
   /** Rule identifier, e.g. "BR-CO-10". */
   id: string;
+  /** Severity as flagged in the rule set. */
   flag: Flag;
+  /** Message text with the values filled in. */
   message: string;
   /** XPath of the node the rule fired on. */
   location: string;
@@ -122,6 +142,8 @@ function messageParts(n: XNode): MessagePart[] {
 /**
  * Compiles a Schematron schema (ISO Schematron, XSLT 2 binding) into a rule set. `includes`
  * resolves <include href> to the text of the referenced file.
+ *
+ * @beta
  */
 export function compileSchematron(
   source: string,
@@ -257,6 +279,11 @@ function patternToSelect(ast: Ast): Ast {
   return ast;
 }
 
+/**
+ * Options of {@link runSchematron}.
+ *
+ * @beta
+ */
 export interface RunOptions {
   /** Extra functions, keyed like "{uri}local" (see parseXPath). */
   functions?: ReadonlyMap<string, XPathFunction>;
@@ -268,7 +295,11 @@ export interface RunOptions {
 
 const selectCache = new WeakMap<Ast, Ast>();
 
-/** Evaluates a compiled rule set against a parsed document. */
+/**
+ * Evaluates a compiled rule set against a parsed document.
+ *
+ * @beta
+ */
 export function runSchematron(
   set: CompiledRuleSet,
   doc: XNode,

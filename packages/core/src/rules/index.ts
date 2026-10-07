@@ -5,10 +5,13 @@ import info from "./info.json";
 import xrechnungCii from "./xrechnung-cii.json";
 import xrechnungUbl from "./xrechnung-ubl.json";
 
+/** Id of a bundled rule set: EN 16931 or XRechnung, each for UBL or CII. */
 export type RuleSetId = "en16931-ubl" | "en16931-cii" | "xrechnung-ubl" | "xrechnung-cii";
 
+/** Metadata of a bundled rule set. Contains no build date, so builds stay reproducible. */
 export interface RuleSetInfo {
   id: RuleSetId;
+  /** Human-readable name. */
   name: string;
   /** Version of the vendored rule set, e.g. "1.3.16". */
   version: string;
@@ -41,6 +44,12 @@ const compiled: Record<RuleSetId, CompiledRuleSet> = {
   "xrechnung-cii": xrechnungCii as unknown as CompiledRuleSet,
 };
 
+/**
+ * The compiled rules of a bundled rule set, for use with `runSchematron`. The compiled format is
+ * an implementation detail of the Schematron engine and may change in a minor release.
+ *
+ * @beta
+ */
 export function ruleSet(id: RuleSetId): CompiledRuleSet {
   return compiled[id];
 }

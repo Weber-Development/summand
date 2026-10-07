@@ -1,6 +1,8 @@
 /**
  * Exact decimal numbers for xs:decimal and xs:integer. Invoice rules compare sums of amounts,
  * so binary floating point would produce false errors (0.1 + 0.2 != 0.3).
+ *
+ * @beta
  */
 export class Decimal {
   private constructor(

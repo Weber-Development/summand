@@ -21,6 +21,20 @@ import type {
   SimpleTypeDef,
 } from "./xsd-model";
 
+/**
+ * What kind of schema violation a {@link SchemaFinding} is. New kinds may be added in a minor
+ * release, so handle unknown values.
+ *
+ * - `unexpected-element`: an element that is not allowed here
+ * - `missing-element`: a required element is missing
+ * - `element-order`: elements are in the wrong order
+ * - `too-many`: an element occurs more often than allowed
+ * - `content`: text or child elements where the type allows none, or the reverse
+ * - `missing-attribute`: a required attribute is missing
+ * - `unknown-attribute`: an attribute that is not declared
+ * - `attribute-value`: an attribute has an invalid or non-fixed value
+ * - `value`: the text of an element does not match its type or facets
+ */
 export type SchemaFindingKind =
   | "unexpected-element"
   | "missing-element"
@@ -32,11 +46,15 @@ export type SchemaFindingKind =
   | "attribute-value"
   | "value";
 
+/** One violation found by {@link validateSchema}. In {@link validateInvoice} it becomes a "SUM-XSD" error. */
 export interface SchemaFinding {
+  /** Category of the violation. */
   kind: SchemaFindingKind;
+  /** Human-readable text in the language of the `lang` option. */
   message: string;
   /** XPath of the element or attribute. */
   location: string;
+  /** Line in the source document. */
   line: number;
 }
 
@@ -997,15 +1015,17 @@ function rootType(rt: Runtime, root: XNode): number | undefined {
   return rt.model.roots.includes(k) ? rt.model.elements[k] : undefined;
 }
 
-/**
- * Validates a parsed document against a bundled schema ("ubl-2.1" for UBL Invoice and CreditNote,
- * "cii-d16b" for UN/CEFACT CrossIndustryInvoice) or a compiled {@link SchemaModel}.
- */
+/** Options of {@link validateSchema}. */
 export interface ValidateSchemaOptions {
   /** Message language. Default "en". */
   lang?: "en" | "de";
 }
 
+/**
+ * Validates a parsed document against a bundled schema ("ubl-2.1" for UBL Invoice and CreditNote,
+ * "cii-d16b" for UN/CEFACT CrossIndustryInvoice) or a compiled {@link SchemaModel}. Returns the
+ * violations; an empty array means the document is valid.
+ */
 export function validateSchema(
   doc: XNode,
   schema: SchemaId | SchemaModel,
