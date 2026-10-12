@@ -1,6 +1,6 @@
 ---
 title: Migration and stability
-description: Upgrade notes up to 1.1, what 1.1.0 deprecates and what 2.0 plans, the one breaking change in 1.0.0 (CLI exit codes) and the stability policy of the 1.x versions - what SemVer covers, how rule set updates and verdict changes are released.
+description: Upgrade notes up to 1.1, what 1.1.0 deprecated (removed in 2.0, see Migrating to 2.0), the one breaking change in 1.0.0 (CLI exit codes) and the stability policy of the 1.x versions - what SemVer covers, how rule set updates and verdict changes are released.
 ---
 
 ## What changed in 1.1.0
@@ -24,17 +24,9 @@ Things you may notice after upgrading, none of them a change of verdict:
 - `summand rules` and `summand rules --json` list six rows instead of four (the two older XRechnung rows), and the table has a new last column "Used" (before "Update" with `--check`). Parse the JSON, and select by `id` and `version`.
 - The package is about 60 KB (15 KB gzipped) larger for the older XRechnung rules.
 
-### Planned for 2.0.0
+### Summand 2.0.0
 
-Nothing here is decided beyond the first two points; this is the plan so that you can prepare.
-
-- The deprecated option `xrechnung` and flag `--xrechnung` are removed. Use `ruleSets` / `--rule-sets` now; it works in 1.1 and later.
-- The `peppol` rule sets (Peppol BIS Billing 3.0) will use the same `ruleSets` mechanism (`"peppol"`) when they ship; they are not in 1.1.0 and are not a 2.0 blocker. There will not be a separate boolean for them.
-- Other exports deprecated in 1.x (today only `CheckOptions`) are removed. Node.js 22 becomes the minimum.
-- The structure of validation results is planned to gain stable rule and error codes; this will come with its own migration notes.
-- Corrections for 1.x continue for 12 months after the release of 2.0.0.
-
-A 2.0 release candidate and a migration guide (`docs/migrating-to-2.md`) will come before 2.0.0. If you use `ruleSets` and no deprecated exports, you will have nothing to change.
+The deprecations of 1.1.0 were removed in 2.0.0. See [Migrating to 2.0](migration-2.0.md).
 
 ## Summand 1.0.0
 
@@ -123,7 +115,7 @@ From 1.0.0 Summand follows [Semantic Versioning](https://semver.org). `MAJOR.MIN
 - The `SUM-` codes: their ids, their severities and what they mean. A code is never reused. New codes appear in minor releases, see below.
 - The `summand` command: commands, flags and the exit codes 0, 1, 2 and 3. New commands and flags are minor; a flag never changes meaning.
 - The package entry points (`exports` of `package.json`) and the `summand` binary.
-- Node.js 20 and newer. Dropping a Node.js version is a major change.
+- Node.js 22 and newer since 2.0.0 (1.x: Node.js 20). Dropping a Node.js version is a major change.
 
 ### What it does not cover
 

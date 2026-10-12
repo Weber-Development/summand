@@ -106,14 +106,6 @@ export interface ValidateOptions {
    * applied, with their versions.
    */
   ruleSets?: "auto" | RuleSetSelector[];
-  /**
-   * Apply the XRechnung rules even when the invoice does not declare XRechnung.
-   *
-   * @deprecated Use `ruleSets` with `["en16931", "xrechnung"]` instead. The option still works;
-   * every result that was validated with it carries an info message with the id `SUM-DEPRECATED`.
-   * It will be removed in 2.0.0.
-   */
-  xrechnung?: boolean;
   /** Check a Leitweg-ID in the buyer reference (BT-10). Default true. */
   leitwegId?: boolean;
   /**
@@ -271,18 +263,14 @@ function levelOverrides(detection: Detection, ids: RuleSetId[]): Record<string, 
 
 /**
  * The rule sets `ruleSets: "auto"` applies to a detected document: EN 16931 for the syntax, plus
- * XRechnung when the profile is an XRechnung profile or `options.xrechnung` is set. Empty for
+ * XRechnung when the profile is an XRechnung profile. Empty for
  * profiles that are not EN 16931 compliant (MINIMUM, BASIC WL).
  */
-export function ruleSetsFor(
-  detection: Detection,
-  options: Pick<ValidateOptions, "xrechnung"> = {},
-): RuleSetId[] {
+export function ruleSetsFor(detection: Detection): RuleSetId[] {
   if (!detection.profile.en16931) return [];
   const suffix = detection.syntax === "cii" ? "cii" : "ubl";
   const ids: RuleSetId[] = [`en16931-${suffix}`];
-  if (options.xrechnung || detection.profile.id.startsWith("xrechnung"))
-    ids.push(`xrechnung-${suffix}`);
+  if (detection.profile.id.startsWith("xrechnung")) ids.push(`xrechnung-${suffix}`);
   return ids;
 }
 
@@ -319,23 +307,23 @@ export function validateInvoice(
     infos: [],
   };
 
-  if (options.xrechnung !== undefined) {
-    base.infos.push(
+  if ("xrechnung" in options) {
+    // Removed in 2.0. Ignoring it silently would run fewer rules than the caller asked for.
+    const text =
+      'The option xrechnung was removed in 2.0.0. Use ruleSets, for example ruleSets: ["en16931", "xrechnung"].';
+    base.errors.push(
       summandMessage(
-        "SUM-DEPRECATED",
-        "info",
-        options.xrechnung
-          ? tr(
-              'The option "xrechnung" is deprecated. Use ruleSets: ["en16931", "xrechnung"] instead. It will be removed in 2.0.0.',
-              'Die Option "xrechnung" ist veraltet. Verwenden Sie stattdessen ruleSets: ["en16931", "xrechnung"]. Sie wird in 2.0.0 entfernt.',
-            )
-          : tr(
-              'The option "xrechnung" is deprecated. Use ruleSets: "auto" instead, which is the default. It will be removed in 2.0.0.',
-              'Die Option "xrechnung" ist veraltet. Verwenden Sie stattdessen ruleSets: "auto", das ist der Standard. Sie wird in 2.0.0 entfernt.',
-            ),
+        "SUM-RULESET",
+        "error",
+        tr(
+          text,
+          'Die Option xrechnung wurde in 2.0.0 entfernt. Nutzen Sie ruleSets, zum Beispiel ruleSets: ["en16931", "xrechnung"].',
+        ),
       ),
     );
+    return finish(base, started);
   }
+
   if (Array.isArray(options.ruleSets)) {
     // Selectors do not depend on the document, so a wrong one is reported before anything else.
     const checked = resolveRuleSets(options.ruleSets, "ubl");
@@ -491,7 +479,7 @@ export function validateInvoice(
           sets: ResolvedRuleSet[];
         }
       ).sets.filter((s) => !s.family || detection.profile.en16931)
-    : ruleSetsFor(detection, options).map((id) => ({
+    : ruleSetsFor(detection).map((id) => ({
         id,
         version: RULE_SETS[id].version,
         family: true,

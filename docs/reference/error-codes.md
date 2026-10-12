@@ -3,9 +3,22 @@ title: Error codes
 description: Every SUM- code Summand reports, with severity, meaning, cause and fix, plus the exit codes of the summand command.
 ---
 
-Every message of a validation has an `id`. Ids that look like `BR-CO-10`, `BR-DE-15` or `UBL-CR-646` are rules of the bundled rule sets, see [Rule sets](rule-sets.md). Ids that start with `SUM-` are Summand's own checks and are listed here. They are part of the [stable API](../guides/migration-1.0.md#stability-policy): a code is never renamed or reused for something else within a major version, and new codes only appear in minor releases.
+Every message of a validation has an `id`. Ids that look like `BR-CO-10`, `BR-DE-15` or `UBL-CR-646` are rules of the bundled rule sets, see [Rule sets](rule-sets.md). Ids that start with `SUM-` are Summand's own checks and are listed here. They are part of the [stable API](../guides/migration-1.0.md#stability-policy): a code is never renamed or reused for something else within a major version, and new codes only appear in minor releases. `SUM-DEPRECATED` (1.1) was removed in 2.0.0 together with the option it reported; nothing emits it any more and the code will not be reused.
 
 The same codes are reported in English and German (`lang: "de"`); only the `message` text changes. Match on `id`, never on the text.
+
+## The shape of a message (2.0 contract)
+
+Every finding in `result.errors`, `result.warnings` and `result.infos` has these fields, always set and with these types:
+
+| Field | Type | Contract |
+|---|---|---|
+| `id` | `string` | The stable code: a rule id of a bundled rule set (`BR-CO-10`, `BR-DE-15`, `UBL-CR-646`, ...) or a `SUM-` code from the table below. Rule ids are the upstream's; `SUM-` codes are never renamed or reused. |
+| `severity` | `"error" \| "warning" \| "info"` | Always equal to the list the message is in (`errors` has only `"error"`, and so on), so a message is self-describing once you copy it out of the result. |
+| `ruleSet` | `RuleSetId \| "summand"` | Which rule set produced it: `en16931-ubl`, `en16931-cii`, `xrechnung-ubl`, `xrechnung-cii`, or `summand` for the `SUM-` codes. A message with a `SUM-` id has `ruleSet: "summand"` and a message from a rule set never has an id starting with `SUM-`. |
+| `message` | `string` | Text for people. Not stable; do not match on it. |
+
+The field is called `id`, as in 1.x; it was not renamed to `code`. `location`, `line` and `evaluationError` are optional. The same fields are in the `--json` output of the CLI. A test checks the contract above on real results.
 
 | Code | Severity | Raised when |
 |---|---|---|
@@ -17,8 +30,7 @@ The same codes are reported in English and German (`lang: "de"`); only the `mess
 | [`SUM-EXTENDED`](#sum-extended) | info | EXTENDED violations were reported as warnings |
 | [`SUM-LEITWEG`](#sum-leitweg) | warning | The Leitweg-ID has wrong check digits |
 | [`SUM-PDF-LEVEL`](#sum-pdf-level) | warning | The PDF metadata declares a different profile than the XML |
-| [`SUM-RULESET`](#sum-ruleset) | error | `ruleSets` names a rule set or version that is not bundled |
-| [`SUM-DEPRECATED`](#sum-deprecated) | info | A deprecated option was used |
+| [`SUM-RULESET`](#sum-ruleset) | error | `ruleSets` names a rule set or version that is not bundled, or the removed `xrechnung` option is passed |
 | [`SUM-BATCH`](#sum-batch) | error | `validateMany` could not process an input (not a verdict about the invoice) |
 
 When validation stops early (`SUM-XML`, `SUM-FORMAT`, `SUM-PDF`, `SUM-RULESET`), the result has that one error and no `syntax`, `profile`, `summary` or `schemas`. `SUM-RULESET` does not depend on the document: it is reported for every input, before the document is read.
@@ -121,19 +133,9 @@ Severity: error. No `line`, no `location`. Validation stops before the document 
 
 **Meaning.** An entry of the `ruleSets` option (CLI: `--rule-sets`) is not a bundled rule set, or names a version that is not bundled. The message lists what is known. No rule set ran, so the result says nothing about the invoice.
 
-**Causes.** A typo ("xrechung"), a version that was never bundled or was removed ("xrechnung@2.4.0"), a version of another rule set ("en16931@2.6.0"), an empty version ("xrechnung@"), or a config file written for a newer Summand version than the installed one.
+**Causes.** The removed `xrechnung` option is still passed (removed in 2.0.0, use `ruleSets`), a typo ("xrechung"), a version that was never bundled or was removed ("xrechnung@2.4.0"), a version of another rule set ("en16931@2.6.0"), an empty version ("xrechnung@"), or a config file written for a newer Summand version than the installed one.
 
 **Fix.** Use `en16931` or `xrechnung`, optionally with `@` and one of the versions `ruleSetInfo({ versions: "all" })` (CLI: `summand rules`) lists. See [Rule sets and versions](../guides/rule-sets.md#selecting-rule-sets-and-versions). The CLI treats the same mistake as a usage error (exit code 2) before it reads any file.
-
-### SUM-DEPRECATED
-
-Severity: info. No `line`, no `location`. Validation is not affected.
-
-**Meaning.** You used an option that is deprecated and will be removed in 2.0.0. The message names the replacement. Today this is the boolean option `xrechnung`, replaced by `ruleSets`. The result is the same as without the note; it is an info, so it neither makes an invoice invalid nor turns into an exit code with `--warnings-as-errors`. The library prints nothing to the console; the note is in `result.infos`.
-
-**Causes.** `validateInvoice(xml, { xrechnung: true })` or `{ xrechnung: false }`, or the CLI flag `--xrechnung` (the flag also prints one line to stderr).
-
-**Fix.** Replace `xrechnung: true` with `ruleSets: ["en16931", "xrechnung"]` and drop `xrechnung: false` (the default is `ruleSets: "auto"`); replace `--xrechnung` with `--rule-sets en16931,xrechnung`. See [What changed in 1.1.0](../guides/migration-1.0.md#what-changed-in-110).
 
 ### SUM-BATCH
 

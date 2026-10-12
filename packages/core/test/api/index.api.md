@@ -276,7 +276,7 @@ type RuleSetSelector = RuleSetFamily | RuleSetId | `${RuleSetFamily | RuleSetId}
 ## ruleSetsFor (value)
 
 ```ts
-function ruleSetsFor(detection: Detection, options?: Pick<ValidateOptions, "xrechnung">): RuleSetId[];
+function ruleSetsFor(detection: Detection): RuleSetId[];
 ```
 
 ## RunOptions (type, beta)
@@ -396,7 +396,6 @@ function validateInvoice(input: InvoiceInput, options?: ValidateOptions): Valida
 ```ts
 interface ValidateOptions {
     ruleSets?: "auto" | RuleSetSelector[];
-    xrechnung?: boolean;
     leitwegId?: boolean;
     schema?: boolean;
     includeXml?: boolean;

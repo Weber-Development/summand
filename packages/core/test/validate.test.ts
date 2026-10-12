@@ -69,10 +69,9 @@ describe("validateInvoice", () => {
       "urn:cen.eu:en16931:2017",
     );
     expect(validateInvoice(plain).ruleSets.map((s) => s.id)).toEqual(["en16931-cii"]);
-    expect(validateInvoice(plain, { xrechnung: true }).ruleSets.map((s) => s.id)).toEqual([
-      "en16931-cii",
-      "xrechnung-cii",
-    ]);
+    expect(
+      validateInvoice(plain, { ruleSets: ["en16931", "xrechnung"] }).ruleSets.map((s) => s.id),
+    ).toEqual(["en16931-cii", "xrechnung-cii"]);
   });
 
   it("warns about a Leitweg-ID with wrong check digits", () => {
@@ -146,5 +145,47 @@ describe("Leitweg-ID", () => {
     expect(isValidLeitwegId("04011000-12345-34")).toBe(false);
     expect(isValidLeitwegId("hello")).toBe(false);
     expect(leitwegCheckDigits("04011000", "1234512345")).toBe("06");
+  });
+});
+
+describe("message contract (2.0)", () => {
+  it("gives every finding a stable id, a severity that matches its list and a ruleSet", () => {
+    const cases = [
+      validateInvoice(xr.replace(/<cbc:BuyerReference>[^<]*<\/cbc:BuyerReference>/, "")),
+      validateInvoice(cii.replace(/<ram:BuyerReference>[^<]*<\/ram:BuyerReference>/, "")),
+      validateInvoice("<x>"),
+      validateInvoice("<Order/>"),
+      validateInvoice(xr, { ruleSets: ["nope" as never] }),
+    ];
+    const known = new Set([
+      "summand",
+      "en16931-ubl",
+      "en16931-cii",
+      "xrechnung-ubl",
+      "xrechnung-cii",
+    ]);
+    let seen = 0;
+    for (const r of cases) {
+      for (const severity of ["error", "warning", "info"] as const) {
+        const list = r[`${severity}s` as "errors" | "warnings" | "infos"];
+        for (const m of list) {
+          seen++;
+          expect(m.id).toMatch(/^[A-Z][A-Z0-9]*(?:-[A-Za-z0-9]+)+$/);
+          expect(m.severity).toBe(severity);
+          expect(known.has(m.ruleSet)).toBe(true);
+          expect(m.id.startsWith("SUM-")).toBe(m.ruleSet === "summand");
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(3);
+  });
+});
+
+describe("removed xrechnung option", () => {
+  it("is reported as SUM-RULESET instead of being ignored", () => {
+    const result = validateInvoice("<x/>", { xrechnung: true } as never);
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]?.id).toBe("SUM-RULESET");
+    expect(result.errors[0]?.message).toContain("removed in 2.0.0");
   });
 });

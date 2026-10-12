@@ -175,7 +175,6 @@ type Syntax = "ubl-invoice" | "ubl-creditnote" | "cii";
 ```ts
 interface ValidateOptions {
     ruleSets?: "auto" | RuleSetSelector[];
-    xrechnung?: boolean;
     leitwegId?: boolean;
     schema?: boolean;
     includeXml?: boolean;

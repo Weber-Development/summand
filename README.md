@@ -3,7 +3,7 @@
 Validate XRechnung, ZUGFeRD and Factur-X e-invoices against EN 16931 in TypeScript. Like the KoSIT validator, Summand checks the UBL or CII XML Schema first and then runs the official CEN and KoSIT Schematron rules with its own XPath 2.0 engine, in Node.js and in the browser. No Java, no service, no dependencies.
 
 ```bash
-pnpm add @sweberdev/summand
+pnpm add @sweberdev/summand   # Node.js 22 or newer
 ```
 
 ```ts
@@ -32,8 +32,8 @@ npx @sweberdev/summand validate invoices/*.xml invoices/*.pdf
 - XML Schema (XSD) validation against UBL 2.1 and UN/CEFACT CII D16B: unknown, missing, misplaced or repeated elements, attributes, dates and numbers (`SUM-XSD`, switch off with `schema: false`)
 - UBL Invoice, UBL Credit Note and UN/CEFACT CII
 - ZUGFeRD / Factur-X PDFs: embedded XML is found and validated, XMP profile compared
-- Profiles: XRechnung (standard, extension, CVD), EN 16931, Factur-X BASIC, EXTENDED, BASIC WL, MINIMUM, Peppol BIS
-- Rule id, severity, XPath and line for every message, plus an invoice summary
+- Profiles: XRechnung (standard, extension, CVD), EN 16931, Factur-X BASIC, EXTENDED, BASIC WL, MINIMUM, Peppol BIS (recognised; the Peppol and Factur-X EXTENDED Schematron rules are not included, those invoices are checked against EN 16931)
+- A stable `id` (rule id such as `BR-DE-15`, or a `SUM-` code), `severity` and `ruleSet` for every message, plus XPath, line and an invoice summary
 - Messages in English or German (`lang: "de"`, CLI `--lang de`) for every rule
 - Leitweg-ID check digits
 - CLI with JSON output and ESLint-style exit codes (0 valid, 1 invalid, 2 error running the command)
@@ -43,6 +43,10 @@ npx @sweberdev/summand validate invoices/*.xml invoices/*.pdf
 ## Conformance
 
 Tested on every change with the CEN EN 16931 unit tests (1,142 expectations, all pass) and the KoSIT XRechnung test suite (all reference invoices valid against schema and rules). The schema validation was compared with Xerces (the XML Schema validator of the KoSIT validator) on the test material and on about 2,800 modified invoices, with the same verdict for every document.
+
+## Upgrading from 1.x
+
+2.0.0 removes the deprecated `xrechnung` option and `--xrechnung` flag (use `ruleSets` / `--rule-sets`), the `CheckOptions` alias and `SUM-DEPRECATED`, and requires Node.js 22. See [Migrating to 2.0](docs/guides/migration-2.0.md).
 
 ## Docs
 

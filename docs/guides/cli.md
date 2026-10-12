@@ -31,7 +31,6 @@ The exit code is 1 when at least one invoice is invalid and 2 when the command c
 |---|---|
 | `--json` | One JSON result per line (JSON Lines) |
 | `--rule-sets <list>` | Rule sets to apply, comma-separated, each optionally with a version: `en16931,xrechnung@2.5.0`. Default `auto`. An unknown name or version is a usage error (exit 2). See [Rule sets and versions](rule-sets.md#selecting-rule-sets-and-versions). |
-| `--xrechnung` | **Deprecated, removed in 2.0.0.** Use `--rule-sets en16931,xrechnung`. Prints a note to stderr; the exit code is not affected. |
 | `--strict-extended` | EXTENDED: EN 16931 violations are errors |
 | `--no-schema` | Skip the XML Schema (XSD) check |
 | `--no-leitweg` | Do not check the Leitweg-ID in the buyer reference |
