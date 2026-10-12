@@ -6,6 +6,7 @@
       "!**/dist",
       "!**/node_modules",
       "!**/coverage",
+      "!.changeset/pre.json",
       "!**/.next",
       "!**/next-env.d.ts",
       "!**/test-results",
