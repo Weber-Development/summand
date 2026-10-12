@@ -4,5 +4,7 @@
   "initialVersions": {
     "@sweberdev/summand": "1.1.0"
   },
-  "changesets": []
+  "changesets": [
+    "summand-2-0-0"
+  ]
 }
