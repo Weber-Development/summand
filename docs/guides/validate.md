@@ -23,8 +23,8 @@ const result = validateInvoice(input, options);
 
 | Option | Default | Effect |
 |---|---|---|
-| `ruleSets` | `"auto"` | Rule sets to apply, e.g. `["en16931-ubl"]`. `"auto"` picks them from the syntax and profile, see [Profiles](profiles.md). |
-| `xrechnung` | `false` | Apply the XRechnung rules even if the invoice does not declare XRechnung. Useful when you receive invoices as a German public buyer. |
+| `ruleSets` | `"auto"` | Rule sets to apply, e.g. `["en16931", "xrechnung"]` or `["en16931", "xrechnung@2.5.0"]` for a bundled older version. `"auto"` picks them from the syntax and profile, see [Profiles](profiles.md) and [Rule sets and versions](rule-sets.md#selecting-rule-sets-and-versions). |
+| `xrechnung` | `false` | **Deprecated, removed in 2.0.0.** Use `ruleSets: ["en16931", "xrechnung"]`, which gives identical results. Results validated with it carry the info `SUM-DEPRECATED`. |
 | `extended` | `"lenient"` | ZUGFeRD / Factur-X EXTENDED: report EN 16931 violations as warnings (`"lenient"`) or as errors (`"strict"`). |
 | `schema` | `true` | Check the XML Schema (UBL 2.1 or CII D16B) before the Schematron rules. Violations are errors with the id `SUM-XSD`. See [XML Schema](schema.md). |
 | `leitwegId` | `true` | Warn when the buyer reference looks like a Leitweg-ID but has wrong check digits. |
@@ -39,7 +39,7 @@ const result = validateInvoice(input, options);
 | `syntax` | `"ubl-invoice"`, `"ubl-creditnote"` or `"cii"` |
 | `profile` | `id`, `label`, the specification identifier (BT-24) and whether the profile is EN 16931 compliant |
 | `source` | `type` (`"xml"` or `"pdf"`), the name of the embedded file and the conformance level from the PDF metadata |
-| `ruleSets` | Applied rule sets with the same data as `ruleSetInfo()`: name, version, release, publisher, source, licence and rule count, see [Rule sets and updates](rule-sets.md) |
+| `ruleSets` | Applied rule sets with the same data as `ruleSetInfo()`: name, version, release, publisher, source, licence and rule count, see [Rule sets and versions](rule-sets.md) |
 | `schemas` | XML Schemas the invoice was checked against (`ubl-2.1` or `cii-d16b`), with name, version, source and licence; empty with `schema: false` |
 | `errors`, `warnings`, `infos` | Messages, see below |
 | `summary` | Invoice number, type, dates, currency, buyer reference, seller and buyer (name, VAT ID, country), totals and the number of lines |
@@ -69,6 +69,8 @@ Rule ids starting with `SUM-` are Summand's own checks. Each is described with c
 | `SUM-EXTENDED` | Info that EXTENDED violations were reported as warnings |
 | `SUM-PDF-LEVEL` | The PDF metadata declares a different profile than the XML |
 | `SUM-LEITWEG` | The buyer reference looks like a Leitweg-ID but its check digits are wrong |
+| `SUM-RULESET` | `ruleSets` names a rule set or version that is not bundled (error; no rule set runs) |
+| `SUM-DEPRECATED` | A deprecated option was used (info) |
 
 ## Exit codes on the command line
 

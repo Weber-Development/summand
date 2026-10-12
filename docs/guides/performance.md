@@ -50,3 +50,44 @@ pnpm bench --json                           # machine-readable
 ```
 
 A test (`test/performance.test.ts`) validates 1,000 lines in UBL and CII with a limit of 10 seconds. That is about 10 to 25 times the normal time on the machine above, so it passes on slow CI runners but fails if the quadratic behaviour comes back.
+
+## Validating many files
+
+For batches there is `validateMany` (`@sweberdev/summand/batch`), see [Validating many invoices](batch.md). It runs the same validation in a pool of worker threads. The numbers below show what that buys and what it does not.
+
+Whole batch, in milliseconds, median of 7 runs after one warm-up run. Every run reads the files from disk and validates each with all phases on (XML Schema, EN 16931 rules, XRechnung rules); the pool, including starting its worker threads, is created anew in every run. "Loop" is a plain `for` loop with `validateInvoice` on the calling thread, which is already warm from the warm-up run; `validateMany(n)` is `concurrency: n`, where 1 means the calling thread without workers. Node 22.22.0 on an Intel Xeon @ 2.10 GHz with 4 available cores (a cloud container), Linux 6.18.
+
+| Batch | Loop | validateMany(1) | validateMany(2) | validateMany(3) | validateMany(4) |
+|---|---|---|---|---|---|
+| 200 small invoices (5 to 25 KB) | 1,127 | 1,187 | 1,466 | 1,592 | 1,693 |
+| 40 invoices with 100 lines (110 to 195 KB) | 2,589 | 2,467 | 2,049 | 2,281 | 2,793 |
+| 8 invoices with 1,000 lines (1.1 to 1.9 MB) | 5,052 | 5,020 | 3,410 | 3,393 | 3,577 |
+
+Speed-up against the loop (above 1 is faster):
+
+| Batch | (1) | (2) | (3) | (4) |
+|---|---|---|---|---|
+| 200 small invoices | 0.95x | 0.77x | 0.71x | 0.67x |
+| 40 invoices with 100 lines | 1.05x | 1.26x | 1.14x | 0.93x |
+| 8 invoices with 1,000 lines | 1.01x | 1.48x | 1.49x | 1.41x |
+
+**What this says, honestly:**
+
+- On this machine the pool helps only for large invoices, by about 1.5x with 2 to 4 workers, and not by 4x on 4 cores. For 100-line invoices the gain is at most 1.26x, and for small invoices the pool is **slower** than the loop. A worker has to start, load the rule sets and run its first invoices unoptimised, which costs a few hundred milliseconds per batch; results also have to be copied back to the calling thread. If the whole batch takes about a second sequentially, use `concurrency: 1` or the plain loop.
+- The limit is not the pool alone. As a control we validated the same eight 1,000-line files in plain Node processes without any pool: 8 files in one process took 5.8 to 6.9 s; the same files split over 4 separate processes (2 files each) took between 3.0 and 6.4 s per process in four attempts, so 4 processes gave between about 1x and about 2x. On this container validation is limited by memory bandwidth and shared resources, and the timings vary from run to run. A CPU-only loop scales perfectly on the same container (4 processes took as long as 1), so the cores are real; the workload is memory-hungry (it builds a tree of the whole XML document and a node index). Expect better scaling on a machine with more memory bandwidth per core, and measure on yours.
+- An earlier run of the same benchmark (5 runs, concurrency 1, 2 and 4) gave the same picture: 1.0x to 1.5x for 1,000-line invoices, 1.0x to 1.2x for 100 lines, 0.74x to 1.2x for small invoices.
+- Memory per worker is that of one validation, so a large `concurrency` multiplies the peak memory of big invoices; this is the second reason the default is capped at `min(4, cores)`.
+
+The benefit that does not depend on the machine is that the calling thread stays free (your server or UI keeps responding during a long batch) and that results can be streamed in order while the batch is still running.
+
+### Measuring it yourself
+
+```bash
+cd packages/core
+pnpm build                                 # the workers load dist/batch-worker.js
+pnpm bench:batch                           # three batches, concurrency 1, 2 and 4, 5 runs each
+pnpm bench:batch --runs 7 --concurrency 1,2,3,4
+pnpm bench:batch --json                    # machine-readable, with the machine description
+```
+
+The batches are built from the sample invoices of the XRechnung test suite (small), and from generated invoices with 100 and 1,000 lines (the same generator as `pnpm bench`). Compare the ratios and run it on the hardware you will deploy on.

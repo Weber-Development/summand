@@ -15,6 +15,14 @@
     "version": "2.6.0",
     "release": "v2.6.0"
   },
+  "xrechnung-2.5.0": {
+    "publisher": "Koordinierungsstelle für IT-Standards (KoSIT)",
+    "repository": "itplr-kosit/xrechnung-schematron",
+    "url": "https://github.com/itplr-kosit/xrechnung-schematron",
+    "licence": "Apache-2.0",
+    "version": "2.5.0",
+    "release": "v2.5.0"
+  },
   "sets": {
     "en16931-ubl": { "source": "en16931", "name": "EN 16931 validation artefacts (UBL)" },
     "en16931-cii": { "source": "en16931", "name": "EN 16931 validation artefacts (UN/CEFACT CII)" },
@@ -23,5 +31,19 @@
       "source": "xrechnung",
       "name": "XRechnung Schematron (UN/CEFACT CII), XRechnung 3.0"
     }
-  }
+  },
+  "older": [
+    {
+      "set": "xrechnung-ubl",
+      "source": "xrechnung-2.5.0",
+      "file": "xrechnung-2.5.0/XRechnung-UBL-validation.sch",
+      "includes": "xrechnung-2.5.0/common.sch"
+    },
+    {
+      "set": "xrechnung-cii",
+      "source": "xrechnung-2.5.0",
+      "file": "xrechnung-2.5.0/XRechnung-CII-validation.sch",
+      "includes": "xrechnung-2.5.0/common.sch"
+    }
+  ]
 }

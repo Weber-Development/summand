@@ -17,8 +17,11 @@ The same codes are reported in English and German (`lang: "de"`); only the `mess
 | [`SUM-EXTENDED`](#sum-extended) | info | EXTENDED violations were reported as warnings |
 | [`SUM-LEITWEG`](#sum-leitweg) | warning | The Leitweg-ID has wrong check digits |
 | [`SUM-PDF-LEVEL`](#sum-pdf-level) | warning | The PDF metadata declares a different profile than the XML |
+| [`SUM-RULESET`](#sum-ruleset) | error | `ruleSets` names a rule set or version that is not bundled |
+| [`SUM-DEPRECATED`](#sum-deprecated) | info | A deprecated option was used |
+| [`SUM-BATCH`](#sum-batch) | error | `validateMany` could not process an input (not a verdict about the invoice) |
 
-When validation stops early (`SUM-XML`, `SUM-FORMAT`, `SUM-PDF`), the result has that one error and no `syntax`, `profile`, `summary` or `schemas`.
+When validation stops early (`SUM-XML`, `SUM-FORMAT`, `SUM-PDF`, `SUM-RULESET`), the result has that one error and no `syntax`, `profile`, `summary` or `schemas`. `SUM-RULESET` does not depend on the document: it is reported for every input, before the document is read.
 
 ### SUM-XML
 
@@ -82,7 +85,7 @@ Severity: error (MINIMUM, BASIC WL) or warning (unknown or missing identifier). 
 
 **Causes.** An invoice created with a reduced profile, an invoice generator that does not write BT-24, or a typo in the identifier.
 
-**Fix.** Issue the invoice in the EN 16931 (COMFORT), BASIC, EXTENDED or XRechnung profile. For the warning, set BT-24 (`cbc:CustomizationID` in UBL, `ram:GuidelineSpecifiedDocumentContextParameter/ram:ID` in CII) to the identifier of the profile you intend, for example `urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0`. To apply the XRechnung rules to an invoice that does not declare XRechnung, use `xrechnung: true` / `--xrechnung`. See [Profiles](../guides/profiles.md).
+**Fix.** Issue the invoice in the EN 16931 (COMFORT), BASIC, EXTENDED or XRechnung profile. For the warning, set BT-24 (`cbc:CustomizationID` in UBL, `ram:GuidelineSpecifiedDocumentContextParameter/ram:ID` in CII) to the identifier of the profile you intend, for example `urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0`. To apply the XRechnung rules to an invoice that does not declare XRechnung, use `ruleSets: ["en16931", "xrechnung"]` / `--rule-sets en16931,xrechnung`. See [Profiles](../guides/profiles.md).
 
 ### SUM-EXTENDED
 
@@ -111,6 +114,36 @@ Severity: warning. No `line`, no `location`.
 **Causes.** The XML was replaced or regenerated without updating the PDF metadata, or the metadata was written for another profile.
 
 **Fix.** Regenerate the PDF so the XMP `ConformanceLevel` matches the profile in the XML (BT-24).
+
+### SUM-RULESET
+
+Severity: error. No `line`, no `location`. Validation stops before the document is read.
+
+**Meaning.** An entry of the `ruleSets` option (CLI: `--rule-sets`) is not a bundled rule set, or names a version that is not bundled. The message lists what is known. No rule set ran, so the result says nothing about the invoice.
+
+**Causes.** A typo ("xrechung"), a version that was never bundled or was removed ("xrechnung@2.4.0"), a version of another rule set ("en16931@2.6.0"), an empty version ("xrechnung@"), or a config file written for a newer Summand version than the installed one.
+
+**Fix.** Use `en16931` or `xrechnung`, optionally with `@` and one of the versions `ruleSetInfo({ versions: "all" })` (CLI: `summand rules`) lists. See [Rule sets and versions](../guides/rule-sets.md#selecting-rule-sets-and-versions). The CLI treats the same mistake as a usage error (exit code 2) before it reads any file.
+
+### SUM-DEPRECATED
+
+Severity: info. No `line`, no `location`. Validation is not affected.
+
+**Meaning.** You used an option that is deprecated and will be removed in 2.0.0. The message names the replacement. Today this is the boolean option `xrechnung`, replaced by `ruleSets`. The result is the same as without the note; it is an info, so it neither makes an invoice invalid nor turns into an exit code with `--warnings-as-errors`. The library prints nothing to the console; the note is in `result.infos`.
+
+**Causes.** `validateInvoice(xml, { xrechnung: true })` or `{ xrechnung: false }`, or the CLI flag `--xrechnung` (the flag also prints one line to stderr).
+
+**Fix.** Replace `xrechnung: true` with `ruleSets: ["en16931", "xrechnung"]` and drop `xrechnung: false` (the default is `ruleSets: "auto"`); replace `--xrechnung` with `--rule-sets en16931,xrechnung`. See [What changed in 1.1.0](../guides/migration-1.0.md#what-changed-in-110).
+
+### SUM-BATCH
+
+Severity: error. Appears as `BatchResult.error` (`{ code, message }`), not inside a `ValidationResult`, because there is no result.
+
+**Meaning.** `validateMany` could not process one input: the file could not be read, the input could not be sent to the worker thread, or the worker thread failed. This is different from an invalid invoice, which is a normal result with `valid: false`. The other inputs of the batch are not affected.
+
+**Causes.** A path that does not exist or is a directory, no permission, a `data` value that is not text or bytes, a worker that ran out of memory or exited, or a batch that was stopped.
+
+**Fix.** Read `error.message` (it carries the operating system error for files). Check paths and permissions. For very large invoices, validate them with `concurrency: 1` or a smaller batch. A failed input never stops the batch; collect the entries with `error` and report them like the CLI does for unreadable files (exit code 2).
 
 ## The evaluationError field
 

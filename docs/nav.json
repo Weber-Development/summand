@@ -11,6 +11,7 @@
         "guides/profiles",
         "guides/schema",
         "guides/rule-sets",
+        "guides/batch",
         "guides/performance",
         "guides/pdf",
         "guides/browser",

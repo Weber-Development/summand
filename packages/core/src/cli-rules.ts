@@ -26,7 +26,7 @@ function describe(check: RuleSetCheck): string {
   return `could not check: ${check.reason}`;
 }
 
-/** `summand rules [--json] [--check] [--fail-on-outdated]` */
+/** `summand rules [--json] [--check] [--fail-on-outdated]`: lists every bundled version. */
 export async function rulesCommand(argv: string[], io: Io, check: RuleSetCheckOptions = {}) {
   const { values } = parseArgs({
     args: argv,
@@ -40,7 +40,10 @@ export async function rulesCommand(argv: string[], io: Io, check: RuleSetCheckOp
     io.err("--fail-on-outdated needs --check.");
     return EXIT_CODES.error;
   }
-  const infos: RuleSetInfo[] = ruleSetInfo();
+  // Every bundled version, the defaults first. Only the defaults are compared with upstream.
+  const infos: RuleSetInfo[] = ruleSetInfo({ versions: "all" });
+  const defaults = ruleSetInfo();
+  const isDefault = (i: RuleSetInfo) => defaults.includes(i);
   const token = process.env.SUMMAND_GITHUB_TOKEN;
   const checks = values.check
     ? await checkRuleSets({ ...(token ? { token } : {}), ...check })
@@ -51,7 +54,7 @@ export async function rulesCommand(argv: string[], io: Io, check: RuleSetCheckOp
     io.out(
       JSON.stringify(
         infos.map((info) => {
-          const c = checks?.find((x) => x.id === info.id);
+          const c = isDefault(info) ? checks?.find((x) => x.id === info.id) : undefined;
           return c
             ? { ...info, check: { status: c.status, latest: c.latest, reason: c.reason } }
             : info;
@@ -61,7 +64,7 @@ export async function rulesCommand(argv: string[], io: Io, check: RuleSetCheckOp
       ),
     );
   } else {
-    const header = ["Rule set", "Version", "Rules", "Licence", "Publisher", "Source"];
+    const header = ["Rule set", "Version", "Rules", "Licence", "Publisher", "Source", "Used"];
     const rows = infos.map((i) => [
       i.id,
       i.release,
@@ -69,12 +72,14 @@ export async function rulesCommand(argv: string[], io: Io, check: RuleSetCheckOp
       i.license,
       i.publisher,
       i.source,
+      isDefault(i) ? "default" : `on request (@${i.version})`,
     ]);
     if (checks) {
       header.push("Update");
       rows.forEach((r, n) => {
-        const c = checks.find((x) => x.id === infos[n]?.id);
-        r.push(c ? describe(c) : "");
+        const info = infos[n] as RuleSetInfo;
+        const c = isDefault(info) ? checks.find((x) => x.id === info.id) : undefined;
+        r.push(c ? describe(c) : "older version, not compared");
       });
     }
     for (const line of table([header, ...rows])) io.out(line);
