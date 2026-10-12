@@ -1,6 +1,6 @@
 ---
 title: API
-description: All exports of @sweberdev/summand, @sweberdev/summand/xpath, @sweberdev/summand/rules-check, @sweberdev/summand/batch and @sweberdev/summand/cli, with their stability and deprecations.
+description: All exports of @sweberdev/summand, @sweberdev/summand/xpath, @sweberdev/summand/rules-check, @sweberdev/summand/batch and @sweberdev/summand/cli, with their stability.
 ---
 
 Every export is documented with TSDoc in the package, so your editor shows the same text. A test checks that this page lists exactly the exports of the package.
@@ -43,14 +43,9 @@ Exports are either **stable** or **advanced**. Stable exports follow SemVer: a b
 | `RuleSetFamily`, `RuleSetSelector` | What the `ruleSets` option accepts: `"en16931"`, `"xrechnung"`, a syntax-specific id, each optionally with `@version` |
 | `SchemaId`, `SchemaInfo`, `SchemaFinding`, `SchemaFindingKind`, `ValidateSchemaOptions` | XML Schema validation |
 
-### Deprecated options
+### Deprecated
 
-Options are not exports, so they are listed here. A deprecated option keeps working until the next major version and is documented in TSDoc with its replacement.
-
-| Option | Replacement |
-|---|---|
-| `ValidateOptions.xrechnung` | `ruleSets: ["en16931", "xrechnung"]` (or leave `ruleSets` at `"auto"` for `xrechnung: false`). Deprecated in 1.1.0; every result validated with it has an info `SUM-DEPRECATED`. Removed in 2.0.0. |
-| CLI flag `--xrechnung` | `--rule-sets en16931,xrechnung`. Deprecated in 1.1.0; prints a note to stderr. Removed in 2.0.0. |
+Nothing is deprecated in 2.0.0. What 2.0.0 removed is listed in [Migrating to 2.0](../guides/migration-2.0.md).
 
 ### Advanced (`@beta`)
 
@@ -88,12 +83,6 @@ The XPath 2.0 engine for Schematron. Everything here is advanced (`@beta`).
 
 Not part of the main entry point, so browser bundles do not include it.
 
-### Deprecated
-
-| Export | Replacement |
-|---|---|
-| `CheckOptions` | `RuleSetCheckOptions`. Same type, renamed in 0.9.0 because the old name was too generic for the package namespace. Removed in 2.0.0. |
-
 ## @sweberdev/summand/batch
 
 Node.js only (worker threads and the file system). Browsers call `validateInvoice` per file, see [Validating many invoices](../guides/batch.md).
@@ -114,7 +103,7 @@ Node.js only (worker threads and the file system). Browsers call `validateInvoic
 
 | Item | Description |
 |---|---|
-| `summand validate <files...>` | Options `--json`, `--rule-sets <list>`, `--xrechnung` (deprecated), `--strict-extended`, `--no-schema`, `--no-leitweg`, `--warnings-as-errors`, `--quiet`, `--lang <en\|de>` |
+| `summand validate <files...>` | Options `--json`, `--rule-sets <list>`, `--strict-extended`, `--no-schema`, `--no-leitweg`, `--warnings-as-errors`, `--quiet`, `--lang <en\|de>` |
 | `summand extract <file.pdf>` | Option `--out <file.xml>` (`-o`) |
 | `summand leitweg <id>` | |
 | `summand rules` | Options `--json`, `--check`, `--fail-on-outdated` |

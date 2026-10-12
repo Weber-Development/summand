@@ -40,7 +40,7 @@ validateInvoice(xml, { ruleSets: ["en16931"] });
 validateInvoice(xml, { ruleSets: ["en16931", "xrechnung@2.5.0"] });
 ```
 
-`ruleSets` also accepts the syntax-specific ids (`"en16931-ubl"`) and versions, see [Rule sets and versions](rule-sets.md#selecting-rule-sets-and-versions). The earlier option `xrechnung: true` still works but is deprecated and will be removed in 2.0.0.
+`ruleSets` also accepts the syntax-specific ids (`"en16931-ubl"`) and versions, see [Rule sets and versions](rule-sets.md#selecting-rule-sets-and-versions). The boolean option `xrechnung` of 1.x was removed in 2.0.0, see [Migrating to 2.0](migration-2.0.md).
 
 ## Factur-X EXTENDED
 

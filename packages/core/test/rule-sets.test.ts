@@ -11,17 +11,11 @@ const fixtures = join(__dirname, "fixtures");
 const suite = join(fixtures, "xrechnung-testsuite/business-cases/standard");
 const ubl = readFileSync(join(suite, "01.01a-INVOICE_ubl.xml"), "utf8");
 const cii = readFileSync(join(suite, "01.01a-INVOICE_uncefact.xml"), "utf8");
-const basicWl = readFileSync(join(fixtures, "pdf/validAvoir_FR_type380_BASICWL.pdf"));
 // BR-TMP-6 exists in XRechnung Schematron 2.6.0 only: dates in UBL must be YYYY-MM-DD.
 const oddDate = ubl.replace(/<cbc:IssueDate>[^<]*/, "<cbc:IssueDate>04.04.2016");
 
+const comparable = (r: ValidationResult) => ({ ...r, durationMs: 0 });
 const applied = (r: ValidationResult) => r.ruleSets.map((s) => `${s.id}@${s.version}`);
-/** Everything but the duration and the deprecation note. */
-const comparable = (r: ValidationResult) => ({
-  ...r,
-  durationMs: 0,
-  infos: r.infos.filter((i) => i.id !== "SUM-DEPRECATED"),
-});
 
 describe("ruleSetInfo with versions", () => {
   it("lists the default versions as before and every bundled version on request", () => {
@@ -190,56 +184,21 @@ describe("ruleSets option", () => {
   });
 });
 
-describe("deprecated option xrechnung", () => {
-  it('is an alias for ruleSets: ["en16931", "xrechnung"] with identical results', () => {
-    const inputs: Array<string | Uint8Array> = [
-      ubl,
-      cii,
-      ubl.replace(/<cbc:CustomizationID>[^<]*</, "<cbc:CustomizationID>urn:cen.eu:en16931:2017<"),
-      basicWl, // a profile that is not EN 16931 compliant: neither form applies a rule set
-    ];
-    for (const input of inputs) {
-      const alias = validateInvoice(input, { xrechnung: true });
-      const unified = validateInvoice(input, { ruleSets: ["en16931", "xrechnung"] });
-      expect(comparable(alias)).toEqual(comparable(unified));
-    }
-  });
-
-  it("changes nothing but adds an info with the id SUM-DEPRECATED", () => {
-    const before = validateInvoice(ubl);
-    const aliasFalse = validateInvoice(ubl, { xrechnung: false });
-    expect(comparable(aliasFalse)).toEqual(comparable(before));
-    for (const xrechnung of [true, false]) {
-      const r = validateInvoice(ubl, { xrechnung });
-      const notes = r.infos.filter((i) => i.id === "SUM-DEPRECATED");
-      expect(notes).toHaveLength(1);
-      // The format: it says it is deprecated, what to use, and when it goes away.
-      expect(notes[0]?.message).toMatch(
-        /^The option "xrechnung" is deprecated\. Use ruleSets: .+ It will be removed in 2\.0\.0\.$/,
-      );
-      expect(notes[0]).toMatchObject({ severity: "info", ruleSet: "summand" });
-      // An info never makes an invoice invalid or turns into an exit code with --warnings-as-errors.
-      expect(r.valid).toBe(true);
-      expect(r.warnings).toEqual(before.warnings);
-    }
-    expect(validateInvoice(ubl, { xrechnung: true, lang: "de" }).infos[0]?.message).toMatch(
-      /veraltet.*Verwenden Sie.*2\.0\.0 entfernt/,
+describe("removed option xrechnung (2.0.0)", () => {
+  it("is ignored by the library; ruleSets selects XRechnung on any invoice", () => {
+    const plain = ubl.replace(
+      /<cbc:CustomizationID>[^<]*</,
+      "<cbc:CustomizationID>urn:cen.eu:en16931:2017<",
     );
-    expect(validateInvoice(ubl).infos.map((i) => i.id)).not.toContain("SUM-DEPRECATED");
-    expect(validateInvoice(ubl, { ruleSets: ["en16931"] }).infos.map((i) => i.id)).not.toContain(
-      "SUM-DEPRECATED",
-    );
-    // Also on results for inputs that are not invoices.
-    expect(validateInvoice("<Order/>", { xrechnung: true }).infos.map((i) => i.id)).toEqual([
-      "SUM-DEPRECATED",
+    expect(applied(validateInvoice(plain))).toEqual(["en16931-ubl@1.3.16"]);
+    expect(applied(validateInvoice(plain, { ruleSets: ["en16931", "xrechnung"] }))).toEqual([
+      "en16931-ubl@1.3.16",
+      "xrechnung-ubl@2.6.0",
     ]);
-  });
-
-  it("is deprecated in TSDoc with a replacement and the removal version", () => {
-    const source = readFileSync(join(root, "src/validate.ts"), "utf8");
-    const doc = /\/\*\*((?:(?!\*\/)[\s\S])*)\*\/\s*xrechnung\?: boolean;/.exec(source)?.[1] ?? "";
-    expect(doc).toMatch(/@deprecated Use `ruleSets`/);
-    expect(doc).toMatch(/removed in 2\.0\.0/);
+    // A JavaScript caller that still passes it gets the default rule sets and no note.
+    const legacy = validateInvoice(plain, { xrechnung: true } as never);
+    expect(applied(legacy)).toEqual(["en16931-ubl@1.3.16"]);
+    expect(legacy.infos.map((i) => i.id)).not.toContain("SUM-DEPRECATED");
   });
 });
 
@@ -269,14 +228,10 @@ describe("CLI --rule-sets", () => {
     }
   });
 
-  it("--xrechnung still works, says on stderr that it is deprecated and leaves the exit code alone", async () => {
+  it("--xrechnung is removed: a usage error (2) like any unknown flag", async () => {
     const r = await run(["validate", "--xrechnung", file]);
-    expect(r.code).toBe(0);
-    expect(r.err).toBe(
-      "Warning: --xrechnung is deprecated. Use --rule-sets en16931,xrechnung instead. It will be removed in 2.0.0.",
-    );
-    const strict = await run(["validate", "--xrechnung", "--warnings-as-errors", file]);
-    expect(strict.code).toBe(0);
+    expect(r.code).toBe(2);
+    expect(r.out).toBe("");
   });
 
   it("lists every bundled version with `summand rules`", async () => {

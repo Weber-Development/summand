@@ -47,13 +47,6 @@ export interface RuleSetCheckOptions {
   token?: string;
 }
 
-/**
- * Former name of {@link RuleSetCheckOptions}.
- *
- * @deprecated Use `RuleSetCheckOptions`. The alias will be removed in 2.0.0.
- */
-export type CheckOptions = RuleSetCheckOptions;
-
 // Release tags that name a rule set version. Others (for example tags of other artefacts in the
 // same repository) are ignored.
 const TAGS: Record<string, RegExp> = {

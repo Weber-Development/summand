@@ -34,7 +34,6 @@ validate options
   --json                one JSON result per file (JSON Lines)
   --rule-sets <list>    rule sets to apply, comma-separated, each optionally with a version:
                         en16931,xrechnung@2.5.0 (default: auto, see "summand rules")
-  --xrechnung           deprecated, use --rule-sets en16931,xrechnung (removed in 2.0.0)
   --strict-extended     treat EN 16931 violations in ZUGFeRD EXTENDED as errors
   --no-schema           skip the XML Schema (XSD) validation
   --no-leitweg          do not check the Leitweg-ID in the buyer reference

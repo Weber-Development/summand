@@ -10,7 +10,7 @@ pnpm add @sweberdev/summand
 # or: npm install @sweberdev/summand
 ```
 
-Node.js 20 or newer, or any modern browser. There are no runtime dependencies.
+Node.js 22 or newer, or any modern browser. There are no runtime dependencies.
 
 ## Validate an invoice
 

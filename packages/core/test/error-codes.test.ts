@@ -131,11 +131,6 @@ const scenarios: Array<{
     run: () => validateInvoice(ubl, { ruleSets: ["xrechnung@0.0.1"] }).errors,
   },
   {
-    code: "SUM-DEPRECATED",
-    severity: "info",
-    run: () => validateInvoice(ubl, { xrechnung: true }).infos,
-  },
-  {
     // Not a ValidationMessage: the error of a BatchResult, shaped like one for this check.
     code: "SUM-BATCH",
     severity: "error",

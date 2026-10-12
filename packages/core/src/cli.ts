@@ -29,7 +29,6 @@ validate options
   --json                one JSON result per file (JSON Lines)
   --rule-sets <list>    rule sets to apply, comma-separated, each optionally with a version:
                         en16931,xrechnung@2.5.0 (default: auto, see "summand rules")
-  --xrechnung           deprecated, use --rule-sets en16931,xrechnung (removed in 2.0.0)
   --strict-extended     treat EN 16931 violations in ZUGFeRD EXTENDED as errors
   --no-schema           skip the XML Schema (XSD) validation
   --no-leitweg          do not check the Leitweg-ID in the buyer reference
@@ -123,7 +122,6 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
     allowPositionals: true,
     options: {
       json: { type: "boolean" },
-      xrechnung: { type: "boolean" },
       "rule-sets": { type: "string" },
       "strict-extended": { type: "boolean" },
       "no-schema": { type: "boolean" },
@@ -158,10 +156,6 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
       ruleSets = list as RuleSetSelector[];
     }
   }
-  if (values.xrechnung)
-    io.err(
-      "Warning: --xrechnung is deprecated. Use --rule-sets en16931,xrechnung instead. It will be removed in 2.0.0.",
-    );
   let invalid = false;
   let errored = false;
   for (const file of positionals) {
@@ -176,7 +170,6 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
     }
     const result = validateInvoice(bytes, {
       ...(ruleSets ? { ruleSets } : {}),
-      ...(values.xrechnung ? { xrechnung: true } : {}),
       ...(values["strict-extended"] ? { extended: "strict" as const } : {}),
       ...(values["no-schema"] ? { schema: false } : {}),
       ...(values["no-leitweg"] ? { leitwegId: false } : {}),

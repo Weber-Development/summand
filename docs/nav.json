@@ -18,6 +18,7 @@
         "guides/cli",
         "guides/leitweg-id",
         "guides/schematron",
+        "guides/migration-2.0",
         "guides/migration-1.0"
       ]
     },

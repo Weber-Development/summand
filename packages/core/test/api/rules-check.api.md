@@ -1,11 +1,5 @@
 # @sweberdev/summand/rules-check
 
-## CheckOptions (type, deprecated)
-
-```ts
-type CheckOptions = RuleSetCheckOptions;
-```
-
 ## checkRuleSets (value)
 
 ```ts

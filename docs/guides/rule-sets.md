@@ -45,9 +45,9 @@ const declaresXRechnung = typeof detection !== "string" && detection.profile.id.
 validateInvoice(xml, { ruleSets: declaresXRechnung ? ["en16931", "xrechnung@2.5.0"] : ["en16931"] });
 ```
 
-### The deprecated option `xrechnung`
+### The option `xrechnung` is gone
 
-`xrechnung: true` is an alias for `ruleSets: ["en16931", "xrechnung"]` and gives identical results (a test checks this, including profiles without rule sets). It is deprecated since 1.1.0 and will be removed in 2.0.0. While you use it, `result.infos` contains one message with the id `SUM-DEPRECATED` that names the replacement. It is an info on purpose: it does not change `valid`, does not add a warning and so does not change the exit code with `--warnings-as-errors`. Nothing is written to the console by the library; the CLI flag `--xrechnung` prints one line to stderr. See [What changed in 1.1.0](migration-1.0.md#what-changed-in-110).
+The boolean `xrechnung` option and the `--xrechnung` flag of 1.x were removed in 2.0.0. Use `ruleSets: ["en16931", "xrechnung"]` / `--rule-sets en16931,xrechnung`, see [Migrating to 2.0](migration-2.0.md#removed-the-xrechnung-option-and---xrechnung).
 
 ## What is bundled
 
