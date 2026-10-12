@@ -1,5 +1,19 @@
 # @sweberdev/summand
 
+## 1.1.0
+
+### Minor Changes
+
+- 620a81c: Summand 1.1.0: choose rule sets and versions with one option, validate many invoices with a worker pool, and the first deprecation on the way to 2.0. Nothing was removed, the defaults are unchanged, and the verdict of no invoice changes.
+
+  - **One option for rule sets: `ruleSets`.** It accepts `"auto"` (default, what 1.0 did) or a list of `"en16931"`, `"xrechnung"` (resolved to the UBL or CII rule set of the document) or a syntax-specific id (`"xrechnung-ubl"`), each optionally with a bundled version: `ruleSets: ["en16931", "xrechnung@2.5.0"]`. CLI: `summand validate --rule-sets en16931,xrechnung@2.5.0`. An unknown name or version gives the new error `SUM-RULESET` (the CLI exits with 2 before reading any file).
+  - **Deprecated: the option `xrechnung` and the flag `--xrechnung`.** `xrechnung: true` is now an alias for `ruleSets: ["en16931", "xrechnung"]` and gives identical results. Results validated with it carry one info message with the new id `SUM-DEPRECATED` that names the replacement; the CLI flag prints one line to stderr. It is an info, not a warning, so `valid`, `warnings` and `--warnings-as-errors` exit codes do not change, and the library writes nothing to the console. Removed in 2.0.0.
+  - **Rule set version selection: XRechnung Schematron 2.5.0 is bundled next to 2.6.0** (Apache-2.0, taken from the upstream release v2.5.0, see `NOTICE.md`). 2.6.0 stays the default. `ruleSetInfo({ versions: "all" })` and `summand rules` list every bundled version; `ruleSetInfo(id, version)` returns one; `ruleSet(id, version?)` returns the compiled rules. EN 16931 stays at 1.3.16 only, so `xrechnung@2.5.0` pairs the older XRechnung rules with EN 16931 1.3.16 (KoSIT paired 2.5.0 with 1.3.15, which is not bundled). Known differences of the older release: `BR-TMP-2` is a warning instead of an error, `BR-TMP-4`/`5`/`6`/`7` do not exist, and the identifier scheme code lists lack the codes added in 2.6.0. The package grows by about 60 KB (15 KB gzipped). `summand rules --json` now lists six rows instead of four.
+  - **`validateMany(inputs, options)` in the new entry point `@sweberdev/summand/batch`** (Node.js only): validates files or in-memory data with a bounded pool of worker threads (`concurrency`, default `min(4, cores)`), streams results as an async iterator in input order (or `.toArray()`), reports an unreadable file as `error` with the new code `SUM-BATCH` instead of throwing, supports `AbortSignal`, and stops the workers when you leave the loop. See the new guide "Validating many invoices". Measured speed-ups and the method are in the performance guide; on a 4-core cloud container the gain for 1,000-line invoices was 1.5x, limited by memory bandwidth, and a pool does not pay off for a few small files. Browsers keep using `validateInvoice` per file.
+  - **Not included: Factur-X EXTENDED Schematron.** We looked at the FNFE-MPE validation files for ZUGFeRD / Factur-X EXTENDED. We could not fetch them from FNFE-MPE (the site and its GitHub organisation were unreachable from our build environment), and the copies we could reach inside a third-party project carry no licence statement of their own. Without a confirmed licence from the publisher we do not redistribute them. EXTENDED keeps being checked against EN 16931 only (violations are warnings by default, errors with `extended: "strict"` / `--strict-extended`), as before. Details are in the Rule sets guide.
+
+  New API: `RuleSetFamily`, `RuleSetSelector`, `RuleSetInfoOptions`, the overloads of `ruleSetInfo`, the optional `version` parameter of `ruleSet`, and from `@sweberdev/summand/batch`: `validateMany`, `BatchInput`, `BatchResult`, `BatchError`, `BatchRun`, `ValidateManyOptions`. `ValidateOptions.ruleSets` accepts the new selectors in addition to the old ids. See "What changed in 1.1.0" in the migration guide, which also lists what 2.0 plans to remove.
+
 ## 1.0.0
 
 ### Major Changes
