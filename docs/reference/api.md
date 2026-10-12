@@ -1,6 +1,6 @@
 ---
 title: API
-description: All exports of @sweberdev/summand, @sweberdev/summand/xpath, @sweberdev/summand/rules-check and @sweberdev/summand/cli, with their stability.
+description: All exports of @sweberdev/summand, @sweberdev/summand/xpath, @sweberdev/summand/rules-check, @sweberdev/summand/batch and @sweberdev/summand/cli, with their stability and deprecations.
 ---
 
 Every export is documented with TSDoc in the package, so your editor shows the same text. A test checks that this page lists exactly the exports of the package.
@@ -26,7 +26,7 @@ Exports are either **stable** or **advanced**. Stable exports follow SemVer: a b
 | `isPdf(bytes)` | Whether bytes are a PDF |
 | `PdfError` | Error class of `readPdf` and `extractInvoiceXml` |
 | `isValidLeitwegId(id)`, `parseLeitwegId(id)`, `leitwegCheckDigits(coarse, fine?)` | Leitweg-ID helpers |
-| `RULE_SETS`, `ruleSetInfo(id?)` | Bundled rule sets: metadata (version, release, publisher, source, licence, rule count). See [Rule sets and updates](../guides/rule-sets.md). |
+| `RULE_SETS`, `ruleSetInfo(id?)` | Default version of each bundled rule set: metadata (version, release, publisher, source, licence, rule count). `ruleSetInfo(id, version)` returns one bundled version (or `undefined`), `ruleSetInfo({ versions: "all" })` lists every bundled version. See [Rule sets and versions](../guides/rule-sets.md). |
 | `validateSchema(doc, schema, { lang? })` | Validates a parsed document against `"ubl-2.1"`, `"cii-d16b"` or a compiled `SchemaModel`; `lang: "de"` for German messages. Returns `SchemaFinding[]`. |
 | `SCHEMAS` | Bundled XML Schemas (metadata) |
 
@@ -39,8 +39,18 @@ Exports are either **stable** or **advanced**. Stable exports follow SemVer: a b
 | `InvoiceSummary` | Key facts of an invoice |
 | `PdfInfo`, `EmbeddedFile` | Result of `readPdf` |
 | `LeitwegId` | Result of `parseLeitwegId` |
-| `RuleSetId`, `RuleSetInfo` | Bundled rule sets |
+| `RuleSetId`, `RuleSetInfo`, `RuleSetInfoOptions` | Bundled rule sets and the options of `ruleSetInfo` |
+| `RuleSetFamily`, `RuleSetSelector` | What the `ruleSets` option accepts: `"en16931"`, `"xrechnung"`, a syntax-specific id, each optionally with `@version` |
 | `SchemaId`, `SchemaInfo`, `SchemaFinding`, `SchemaFindingKind`, `ValidateSchemaOptions` | XML Schema validation |
+
+### Deprecated options
+
+Options are not exports, so they are listed here. A deprecated option keeps working until the next major version and is documented in TSDoc with its replacement.
+
+| Option | Replacement |
+|---|---|
+| `ValidateOptions.xrechnung` | `ruleSets: ["en16931", "xrechnung"]` (or leave `ruleSets` at `"auto"` for `xrechnung: false`). Deprecated in 1.1.0; every result validated with it has an info `SUM-DEPRECATED`. Removed in 2.0.0. |
+| CLI flag `--xrechnung` | `--rule-sets en16931,xrechnung`. Deprecated in 1.1.0; prints a note to stderr. Removed in 2.0.0. |
 
 ### Advanced (`@beta`)
 
@@ -50,7 +60,7 @@ For custom Schematron rules and your own tooling on the parsed XML. These may ch
 |---|---|
 | `compileSchematron(source, { id, includes? })` | Compiles a Schematron schema to a JSON rule set |
 | `runSchematron(set, doc, options?)` | Runs a rule set against a parsed document |
-| `ruleSet(id)` | The compiled rules of a bundled rule set |
+| `ruleSet(id, version?)` | The compiled rules of a bundled rule set (default version unless `version` is given) |
 | `parseXml(text)`, `stringValue(node)`, `nodePath(node)`, `XmlError` | The XML parser and helpers for its node tree |
 | `CompiledRuleSet`, `RunOptions`, `SchematronFinding`, `Flag` | Types of the Schematron engine |
 | `SchemaModel` | Compiled XML Schema |
@@ -84,6 +94,15 @@ Not part of the main entry point, so browser bundles do not include it.
 |---|---|
 | `CheckOptions` | `RuleSetCheckOptions`. Same type, renamed in 0.9.0 because the old name was too generic for the package namespace. Removed in 2.0.0. |
 
+## @sweberdev/summand/batch
+
+Node.js only (worker threads and the file system). Browsers call `validateInvoice` per file, see [Validating many invoices](../guides/batch.md).
+
+| Export | Description |
+|---|---|
+| `validateMany(inputs, options?)` | Validates many invoices with a bounded worker pool. Returns a `BatchRun`: an async iterable of results in input order, plus `toArray()`. Never throws per input. Options: all `ValidateOptions`, `concurrency` (default `min(4, cores)`), `signal`. |
+| `BatchInput`, `BatchResult`, `BatchError`, `BatchRun`, `ValidateManyOptions` | Types |
+
 ## @sweberdev/summand/cli
 
 | Export | Description |
@@ -95,7 +114,7 @@ Not part of the main entry point, so browser bundles do not include it.
 
 | Item | Description |
 |---|---|
-| `summand validate <files...>` | Options `--json`, `--xrechnung`, `--strict-extended`, `--no-schema`, `--no-leitweg`, `--warnings-as-errors`, `--quiet`, `--lang <en\|de>` |
+| `summand validate <files...>` | Options `--json`, `--rule-sets <list>`, `--xrechnung` (deprecated), `--strict-extended`, `--no-schema`, `--no-leitweg`, `--warnings-as-errors`, `--quiet`, `--lang <en\|de>` |
 | `summand extract <file.pdf>` | Option `--out <file.xml>` (`-o`) |
 | `summand leitweg <id>` | |
 | `summand rules` | Options `--json`, `--check`, `--fail-on-outdated` |

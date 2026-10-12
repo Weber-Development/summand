@@ -82,7 +82,7 @@ describe("rule set information", () => {
     expect(table.out).toMatch(/^Rule set +Version +Rules +Licence/);
     expect(table.out).toMatch(/xrechnung-ubl +v2\.6\.0 +56 +Apache-2\.0/);
     const json = JSON.parse((await run(["rules", "--json"])).out);
-    expect(json).toEqual(ruleSetInfo());
+    expect(json).toEqual(ruleSetInfo({ versions: "all" }));
   });
 });
 

@@ -220,7 +220,13 @@ const RULE_SETS: Record<RuleSetId, RuleSetInfo>;
 ## ruleSet (value, beta)
 
 ```ts
-function ruleSet(id: RuleSetId): CompiledRuleSet;
+function ruleSet(id: RuleSetId, version?: string): CompiledRuleSet;
+```
+
+## RuleSetFamily (type)
+
+```ts
+type RuleSetFamily = "en16931" | "xrechnung";
 ```
 
 ## RuleSetId (type)
@@ -234,6 +240,8 @@ type RuleSetId = "en16931-ubl" | "en16931-cii" | "xrechnung-ubl" | "xrechnung-ci
 ```ts
 function ruleSetInfo(): RuleSetInfo[];
 function ruleSetInfo(id: RuleSetId): RuleSetInfo;
+function ruleSetInfo(id: RuleSetId, version: string): RuleSetInfo | undefined;
+function ruleSetInfo(options: RuleSetInfoOptions): RuleSetInfo[];
 ```
 
 ## RuleSetInfo (type)
@@ -249,6 +257,20 @@ interface RuleSetInfo {
     license: string;
     rules: number;
 }
+```
+
+## RuleSetInfoOptions (type)
+
+```ts
+interface RuleSetInfoOptions {
+    versions: "all";
+}
+```
+
+## RuleSetSelector (type)
+
+```ts
+type RuleSetSelector = RuleSetFamily | RuleSetId | `${RuleSetFamily | RuleSetId}@${string}`;
 ```
 
 ## ruleSetsFor (value)
@@ -373,7 +395,7 @@ function validateInvoice(input: InvoiceInput, options?: ValidateOptions): Valida
 
 ```ts
 interface ValidateOptions {
-    ruleSets?: "auto" | RuleSetId[];
+    ruleSets?: "auto" | RuleSetSelector[];
     xrechnung?: boolean;
     leitwegId?: boolean;
     schema?: boolean;

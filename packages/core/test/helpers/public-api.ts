@@ -208,5 +208,6 @@ export const ENTRY_POINTS: Record<string, string> = {
   ".": "src/index.ts",
   "./xpath": "src/xpath.ts",
   "./rules-check": "src/rules-check.ts",
+  "./batch": "src/batch.ts",
   "./cli": "src/cli.ts",
 };

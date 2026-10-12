@@ -83,6 +83,7 @@ describe("public API snapshot", () => {
       ".": "../src/index",
       "./xpath": "../src/xpath",
       "./rules-check": "../src/rules-check",
+      "./batch": "../src/batch",
       "./cli": "../src/cli",
     };
     for (const [path, module] of Object.entries(modules)) {

@@ -8,6 +8,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { validateMany } from "../src/batch";
 import { runCli } from "../src/cli";
 import { EXIT_CODES } from "../src/exit-codes";
 import { extractInvoiceXml, type ValidationMessage, validateInvoice } from "../src/index";
@@ -67,7 +68,11 @@ function pdfWithXmp(level: string): Uint8Array {
 }
 
 /** One input per documented behaviour; `severity` is what the catalogue promises for it. */
-const scenarios: Array<{ code: string; severity: string; run: () => ValidationMessage[] }> = [
+const scenarios: Array<{
+  code: string;
+  severity: string;
+  run: () => ValidationMessage[] | Promise<ValidationMessage[]>;
+}> = [
   {
     code: "SUM-XML",
     severity: "error",
@@ -120,6 +125,34 @@ const scenarios: Array<{ code: string; severity: string; run: () => ValidationMe
     severity: "warning",
     run: () => validateInvoice(pdfWithXmp("BASIC")).warnings,
   },
+  {
+    code: "SUM-RULESET",
+    severity: "error",
+    run: () => validateInvoice(ubl, { ruleSets: ["xrechnung@0.0.1"] }).errors,
+  },
+  {
+    code: "SUM-DEPRECATED",
+    severity: "info",
+    run: () => validateInvoice(ubl, { xrechnung: true }).infos,
+  },
+  {
+    // Not a ValidationMessage: the error of a BatchResult, shaped like one for this check.
+    code: "SUM-BATCH",
+    severity: "error",
+    run: async () =>
+      (await validateMany(["/does/not/exist.xml"], { concurrency: 1 }).toArray()).flatMap((r) =>
+        r.error
+          ? [
+              {
+                id: r.error.code,
+                severity: "error" as const,
+                message: r.error.message,
+                ruleSet: "summand" as const,
+              },
+            ]
+          : [],
+      ),
+  },
 ];
 
 describe("error code catalogue", () => {
@@ -146,10 +179,10 @@ describe("error code catalogue", () => {
     }
   });
 
-  it("emits every documented code with the documented severity", () => {
+  it("emits every documented code with the documented severity", async () => {
     const observed = new Map<string, Set<string>>();
     for (const s of scenarios) {
-      const found = s.run().filter((m) => m.id === s.code);
+      const found = (await s.run()).filter((m) => m.id === s.code);
       expect(found.length, `${s.code} (${s.severity})`).toBeGreaterThan(0);
       for (const m of found) {
         expect(m.severity, s.code).toBe(s.severity);

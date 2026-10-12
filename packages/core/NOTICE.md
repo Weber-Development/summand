@@ -27,6 +27,17 @@ and the bundled code derived from them keep the licences of their sources:
 - Licence: Apache License 2.0, https://www.apache.org/licenses/LICENSE-2.0
 - Change: converted from Schematron XML to JSON as above
 
+## XRechnung Schematron, older version
+
+- Files: `src/rules/xrechnung-ubl-2.5.0.json`, `src/rules/xrechnung-cii-2.5.0.json`
+- Source: https://github.com/itplr-kosit/xrechnung-schematron, release v2.5.0 (for XRechnung 3.0.x;
+  `src/validation/schematron/ubl/XRechnung-UBL-validation.sch`,
+  `src/validation/schematron/cii/XRechnung-CII-validation.sch`, `src/validation/schematron/common.sch`)
+- Copyright: Koordinierungsstelle für IT-Standards (KoSIT)
+- Licence: Apache License 2.0, https://www.apache.org/licenses/LICENSE-2.0 (same text as release v2.6.0)
+- Change: converted from Schematron XML to JSON as above. Selectable with
+  `ruleSets: ["xrechnung@2.5.0"]`; not applied by default.
+
 ## KoSIT validator configuration for XRechnung
 
 - The severity changes in `src/validate.ts` follow `scenarios.xml` of

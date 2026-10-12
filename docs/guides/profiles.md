@@ -31,8 +31,17 @@ The KoSIT validator configuration for XRechnung changes the severity of some EN 
 
 ```ts
 // German public buyer: always apply XRechnung
-validateInvoice(xml, { xrechnung: true });
+validateInvoice(xml, { ruleSets: ["en16931", "xrechnung"] });
 
-// only EN 16931 for UBL
-validateInvoice(xml, { ruleSets: ["en16931-ubl"] });
+// only EN 16931 (for the syntax of the invoice)
+validateInvoice(xml, { ruleSets: ["en16931"] });
+
+// an older bundled XRechnung release
+validateInvoice(xml, { ruleSets: ["en16931", "xrechnung@2.5.0"] });
 ```
+
+`ruleSets` also accepts the syntax-specific ids (`"en16931-ubl"`) and versions, see [Rule sets and versions](rule-sets.md#selecting-rule-sets-and-versions). The earlier option `xrechnung: true` still works but is deprecated and will be removed in 2.0.0.
+
+## Factur-X EXTENDED
+
+Summand checks EXTENDED invoices against EN 16931 only. The EXTENDED-specific Schematron of FNFE-MPE is not bundled, because its licence could not be confirmed, see [Not included: Factur-X EXTENDED Schematron](rule-sets.md#not-included-factur-x-extended-schematron). Violations of EN 16931 are warnings by default (`extended: "lenient"`) and errors with `extended: "strict"`.

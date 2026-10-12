@@ -9,6 +9,10 @@ description: The bundled official rule sets and XML Schemas, their versions, sou
 | `en16931-cii` | EN 16931 validation artefacts, CII binding (806 assertions) | 1.3.16 | same | EUPL-1.2 |
 | `xrechnung-ubl` | XRechnung Schematron for XRechnung 3.0, UBL (56 assertions) | 2.6.0 | [itplr-kosit/xrechnung-schematron](https://github.com/itplr-kosit/xrechnung-schematron) | Apache-2.0 |
 | `xrechnung-cii` | XRechnung Schematron for XRechnung 3.0, CII (52 assertions) | 2.6.0 | same | Apache-2.0 |
+| `xrechnung-ubl` | XRechnung Schematron, older release, UBL (55 assertions). Not applied by default | 2.5.0 | same | Apache-2.0 |
+| `xrechnung-cii` | XRechnung Schematron, older release, CII (49 assertions). Not applied by default | 2.5.0 | same | Apache-2.0 |
+
+The first four rows are the default versions. Select a version with `ruleSets`, for example `["en16931", "xrechnung@2.5.0"]`, see [Rule sets and versions](../guides/rule-sets.md#selecting-rule-sets-and-versions). The names `en16931` and `xrechnung` stand for the UBL or CII id of the same row, by the syntax of the invoice.
 
 The Schematron files are included unchanged in the repository (`packages/core/rules-src/`) and compiled to JSON at build time (`src/rules/`). The compiled rule sets keep their original licences; Summand's own code is MIT. See `NOTICE.md` in the package.
 
@@ -25,4 +29,4 @@ These are the schemas EN 16931 1.3.16 and the KoSIT validator configuration for 
 
 ## Updates
 
-New releases of the rule sets come out a few times a year. Summand publishes a minor version for each, with the change in the changelog. `summand rules` lists the bundled versions and `summand rules --check` asks whether newer releases exist, see [Rule sets and updates](../guides/rule-sets.md).
+New releases of the rule sets come out a few times a year. Summand publishes a minor version for each, with the change in the changelog. `summand rules` lists the bundled versions and `summand rules --check` asks whether newer releases exist, see [Rule sets and versions](../guides/rule-sets.md).

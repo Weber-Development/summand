@@ -1,7 +1,16 @@
 import { type Detection, detect, type Profile, type Syntax } from "./detect";
 import { isValidLeitwegId, looksLikeLeitwegId } from "./leitweg";
 import { extractInvoiceXml, isPdf, PdfError } from "./pdf";
-import { RULE_SETS, type RuleSetId, type RuleSetInfo, ruleSet } from "./rules/index";
+import {
+  type ResolvedRuleSet,
+  RULE_SETS,
+  type RuleSetId,
+  type RuleSetInfo,
+  type RuleSetSelector,
+  resolveRuleSets,
+  ruleSet,
+  ruleSetInfo,
+} from "./rules/index";
 import { SCHEMAS, type SchemaId, type SchemaInfo } from "./schemas/index";
 import { runSchematron } from "./schematron";
 import { type InvoiceSummary, summarize } from "./summary";
@@ -81,12 +90,29 @@ export interface ValidationResult {
 /** Options of {@link validateInvoice}. All are optional. */
 export interface ValidateOptions {
   /**
-   * Which rule sets to apply. "auto" (default) applies EN 16931 for the detected syntax and the
-   * XRechnung rules when the document declares XRechnung. Not to be confused with
-   * `ValidationResult.ruleSets`, which lists the rule sets that were applied.
+   * Which rule sets to apply.
+   *
+   * - "auto" (default): EN 16931 for the detected syntax, plus the XRechnung rules when the
+   *   document declares XRechnung. Nothing for profiles that are not EN 16931 compliant
+   *   (MINIMUM, BASIC WL), which are reported with `SUM-PROFILE`.
+   * - A list of selectors: exactly these rule sets, e.g. `["en16931", "xrechnung"]`. A family
+   *   ("en16931", "xrechnung") resolves to its UBL or CII rule set by the detected syntax; a
+   *   syntax-specific id ("xrechnung-ubl") applies as named. A selector can pin a bundled
+   *   version: "xrechnung@2.5.0" (see `ruleSetInfo({ versions: "all" })`). Without a version the
+   *   default version applies, the one in `ruleSetInfo()`. An unknown rule set or version gives
+   *   an error with the id `SUM-RULESET` and no rule set runs.
+   *
+   * Not to be confused with `ValidationResult.ruleSets`, which lists the rule sets that were
+   * applied, with their versions.
    */
-  ruleSets?: "auto" | RuleSetId[];
-  /** Apply the XRechnung rules even when the invoice does not declare XRechnung. */
+  ruleSets?: "auto" | RuleSetSelector[];
+  /**
+   * Apply the XRechnung rules even when the invoice does not declare XRechnung.
+   *
+   * @deprecated Use `ruleSets` with `["en16931", "xrechnung"]` instead. The option still works;
+   * every result that was validated with it carries an info message with the id `SUM-DEPRECATED`.
+   * It will be removed in 2.0.0.
+   */
   xrechnung?: boolean;
   /** Check a Leitweg-ID in the buyer reference (BT-10). Default true. */
   leitwegId?: boolean;
@@ -293,6 +319,38 @@ export function validateInvoice(
     infos: [],
   };
 
+  if (options.xrechnung !== undefined) {
+    base.infos.push(
+      summandMessage(
+        "SUM-DEPRECATED",
+        "info",
+        options.xrechnung
+          ? tr(
+              'The option "xrechnung" is deprecated. Use ruleSets: ["en16931", "xrechnung"] instead. It will be removed in 2.0.0.',
+              'Die Option "xrechnung" ist veraltet. Verwenden Sie stattdessen ruleSets: ["en16931", "xrechnung"]. Sie wird in 2.0.0 entfernt.',
+            )
+          : tr(
+              'The option "xrechnung" is deprecated. Use ruleSets: "auto" instead, which is the default. It will be removed in 2.0.0.',
+              'Die Option "xrechnung" ist veraltet. Verwenden Sie stattdessen ruleSets: "auto", das ist der Standard. Sie wird in 2.0.0 entfernt.',
+            ),
+      ),
+    );
+  }
+  if (Array.isArray(options.ruleSets)) {
+    // Selectors do not depend on the document, so a wrong one is reported before anything else.
+    const checked = resolveRuleSets(options.ruleSets, "ubl");
+    if ("error" in checked) {
+      base.errors.push(
+        summandMessage(
+          "SUM-RULESET",
+          "error",
+          tr(checked.error, `Ungültige Angabe in ruleSets: ${checked.error}`),
+        ),
+      );
+      return finish(base, started);
+    }
+  }
+
   let xml: string;
   if (bytes && isPdf(bytes)) {
     base.source.type = "pdf";
@@ -427,10 +485,18 @@ export function validateInvoice(
     );
   }
 
-  const ids =
-    options.ruleSets && options.ruleSets !== "auto"
-      ? options.ruleSets
-      : ruleSetsFor(detection, options);
+  const selected: ResolvedRuleSet[] = Array.isArray(options.ruleSets)
+    ? (
+        resolveRuleSets(options.ruleSets, detection.syntax === "cii" ? "cii" : "ubl") as {
+          sets: ResolvedRuleSet[];
+        }
+      ).sets.filter((s) => !s.family || detection.profile.en16931)
+    : ruleSetsFor(detection, options).map((id) => ({
+        id,
+        version: RULE_SETS[id].version,
+        family: true,
+      }));
+  const ids = selected.map((s) => s.id);
   const overrides = levelOverrides(detection, ids);
   const lenientExtended =
     detection.profile.id === "factur-x-extended" && options.extended !== "strict";
@@ -446,9 +512,9 @@ export function validateInvoice(
       ),
     );
   }
-  for (const id of ids) {
-    base.ruleSets.push(RULE_SETS[id]);
-    for (const f of runSchematron(ruleSet(id), doc, de ? { lang: "de" } : {})) {
+  for (const { id, version } of selected) {
+    base.ruleSets.push(ruleSetInfo(id, version) as RuleSetInfo);
+    for (const f of runSchematron(ruleSet(id, version), doc, de ? { lang: "de" } : {})) {
       let severity: Severity =
         overrides[f.id] ??
         (f.flag === "warning" ? "warning" : f.flag === "information" ? "info" : "error");

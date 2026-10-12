@@ -1,7 +1,42 @@
 ---
 title: Migration and stability
-description: Upgrade notes up to 1.0, the one breaking change in 1.0.0 (CLI exit codes) and the stability policy of the 1.x versions - what SemVer covers, how rule set updates and verdict changes are released.
+description: Upgrade notes up to 1.1, what 1.1.0 deprecates and what 2.0 plans, the one breaking change in 1.0.0 (CLI exit codes) and the stability policy of the 1.x versions - what SemVer covers, how rule set updates and verdict changes are released.
 ---
+
+## What changed in 1.1.0
+
+1.1.0 only adds. Nothing was removed, no existing result changes, and the defaults are what they were in 1.0. One option and one CLI flag are deprecated so that 2.0 can remove them.
+
+| Change | Kind | Detail |
+|---|---|---|
+| `ruleSets` accepts `"en16931"`, `"xrechnung"` and `"<name>@<version>"` | Addition | One way to say which rule sets run and which version. `"auto"` stays the default and does what 1.0 did; the syntax-specific ids (`"en16931-ubl"`) keep working. See [Rule sets and versions](rule-sets.md#selecting-rule-sets-and-versions). |
+| XRechnung Schematron 2.5.0 bundled next to 2.6.0 | Addition | Select it with `ruleSets: ["en16931", "xrechnung@2.5.0"]`. 2.6.0 stays the default. EN 16931 stays at 1.3.16 only. |
+| `ruleSetInfo({ versions: "all" })`, `ruleSetInfo(id, version)`, `ruleSet(id, version?)` | Addition | `ruleSetInfo()` and `ruleSetInfo(id)` still return the default versions. `summand rules` lists all bundled versions. |
+| New error `SUM-RULESET` | Addition | An unknown rule set or version in `ruleSets` / `--rule-sets`. |
+| `@sweberdev/summand/batch`: `validateMany` | Addition | Validate many files with a worker pool, Node.js only. See [Validating many invoices](batch.md). New error `SUM-BATCH` for inputs that cannot be processed. |
+| `summand validate --rule-sets <list>` | Addition | The CLI counterpart of `ruleSets`. |
+| Option `xrechnung` | **Deprecation** | Use `ruleSets: ["en16931", "xrechnung"]`. Identical results. Results carry the info `SUM-DEPRECATED`. Removed in 2.0.0. |
+| CLI flag `--xrechnung` | **Deprecation** | Use `--rule-sets en16931,xrechnung`. Prints one line to stderr. Removed in 2.0.0. |
+
+Things you may notice after upgrading, none of them a change of verdict:
+
+- If you use `xrechnung: true` or `--xrechnung`, `result.infos` (and the `--json` output) gains one message with the id `SUM-DEPRECATED`. It is an info, so `valid`, `warnings` and the exit codes do not change. If your code asserts that `infos` is empty or deep-equals a stored result, filter this id out or switch to `ruleSets`.
+- `summand rules` and `summand rules --json` list six rows instead of four (the two older XRechnung rows), and the table has a new last column "Used" (before "Update" with `--check`). Parse the JSON, and select by `id` and `version`.
+- The package is about 60 KB (15 KB gzipped) larger for the older XRechnung rules.
+
+### Planned for 2.0.0
+
+Nothing here is decided beyond the first two points; this is the plan so that you can prepare.
+
+- The deprecated option `xrechnung` and flag `--xrechnung` are removed. Use `ruleSets` / `--rule-sets` now; it works in 1.1 and later.
+- The `peppol` rule sets (Peppol BIS Billing 3.0) will use the same `ruleSets` mechanism (`"peppol"`) when they ship; they are not in 1.1.0 and are not a 2.0 blocker. There will not be a separate boolean for them.
+- Other exports deprecated in 1.x (today only `CheckOptions`) are removed. Node.js 22 becomes the minimum.
+- The structure of validation results is planned to gain stable rule and error codes; this will come with its own migration notes.
+- Corrections for 1.x continue for 12 months after the release of 2.0.0.
+
+A 2.0 release candidate and a migration guide (`docs/migrating-to-2.md`) will come before 2.0.0. If you use `ruleSets` and no deprecated exports, you will have nothing to change.
+
+## Summand 1.0.0
 
 Summand 1.0.0 is the first stable release. From here on the stability policy below applies. The API is the one 0.9 had; the only breaking change is in the exit codes of the `summand` command.
 
@@ -53,6 +88,7 @@ esac
 | 0.3.x | 0.4.0: `ruleSetInfo()`, `RULE_SETS`, `summand rules`, `rules --check` and `@sweberdev/summand/rules-check`; much faster validation of large invoices. Additive; results and messages are unchanged. | Nothing. |
 | 0.4.x to 0.9.x | 0.9.0: see below. No removals. | Rename `CheckOptions` to `RuleSetCheckOptions` if you import it. |
 | 0.9.x | 1.0.0: CLI exit code 2 for errors running the command, see above. No API changes. | Check scripts that test for exit code 1. |
+| 1.0.x | 1.1.0: additions and two deprecations, see [What changed in 1.1.0](#what-changed-in-110). | Optionally replace `xrechnung` by `ruleSets`. |
 
 Check an upgrade by running your invoices before and after and comparing `result.ruleSets` (the rule set versions are part of every result) and the ids in `errors` and `warnings`.
 

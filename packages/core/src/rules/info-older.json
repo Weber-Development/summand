@@ -1,0 +1,22 @@
+[
+  {
+    "id": "xrechnung-ubl",
+    "name": "XRechnung Schematron (UBL), XRechnung 3.0",
+    "version": "2.5.0",
+    "release": "v2.5.0",
+    "publisher": "Koordinierungsstelle für IT-Standards (KoSIT)",
+    "source": "https://github.com/itplr-kosit/xrechnung-schematron",
+    "license": "Apache-2.0",
+    "rules": 55
+  },
+  {
+    "id": "xrechnung-cii",
+    "name": "XRechnung Schematron (UN/CEFACT CII), XRechnung 3.0",
+    "version": "2.5.0",
+    "release": "v2.5.0",
+    "publisher": "Koordinierungsstelle für IT-Standards (KoSIT)",
+    "source": "https://github.com/itplr-kosit/xrechnung-schematron",
+    "license": "Apache-2.0",
+    "rules": 49
+  }
+]

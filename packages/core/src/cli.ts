@@ -5,6 +5,7 @@ import { rulesCommand } from "./cli-rules";
 import { EXIT_CODES } from "./exit-codes";
 import { isValidLeitwegId, leitwegCheckDigits, parseLeitwegId } from "./leitweg";
 import { extractInvoiceXml, isPdf } from "./pdf";
+import { type RuleSetSelector, resolveRuleSets } from "./rules/index";
 import type { FetchLike } from "./rules-check";
 import { type ValidationMessage, type ValidationResult, validateInvoice } from "./validate";
 
@@ -26,7 +27,9 @@ Usage
 
 validate options
   --json                one JSON result per file (JSON Lines)
-  --xrechnung           apply the XRechnung rules even if the invoice does not declare XRechnung
+  --rule-sets <list>    rule sets to apply, comma-separated, each optionally with a version:
+                        en16931,xrechnung@2.5.0 (default: auto, see "summand rules")
+  --xrechnung           deprecated, use --rule-sets en16931,xrechnung (removed in 2.0.0)
   --strict-extended     treat EN 16931 violations in ZUGFeRD EXTENDED as errors
   --no-schema           skip the XML Schema (XSD) validation
   --no-leitweg          do not check the Leitweg-ID in the buyer reference
@@ -121,6 +124,7 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
     options: {
       json: { type: "boolean" },
       xrechnung: { type: "boolean" },
+      "rule-sets": { type: "string" },
       "strict-extended": { type: "boolean" },
       "no-schema": { type: "boolean" },
       "no-leitweg": { type: "boolean" },
@@ -137,6 +141,27 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
     io.err("No files given. Usage: summand validate <files...>");
     return EXIT_CODES.error;
   }
+  let ruleSets: "auto" | RuleSetSelector[] | undefined;
+  if (values["rule-sets"] !== undefined) {
+    const list = values["rule-sets"]
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s !== "");
+    if (list.length === 1 && list[0] === "auto") {
+      ruleSets = "auto";
+    } else {
+      const checked = resolveRuleSets(list, "ubl");
+      if ("error" in checked || list.length === 0) {
+        io.err(`--rule-sets: ${"error" in checked ? checked.error : "no rule set given."}`);
+        return EXIT_CODES.error;
+      }
+      ruleSets = list as RuleSetSelector[];
+    }
+  }
+  if (values.xrechnung)
+    io.err(
+      "Warning: --xrechnung is deprecated. Use --rule-sets en16931,xrechnung instead. It will be removed in 2.0.0.",
+    );
   let invalid = false;
   let errored = false;
   for (const file of positionals) {
@@ -150,6 +175,7 @@ async function validate(argv: string[], io: CliIo): Promise<number> {
       continue;
     }
     const result = validateInvoice(bytes, {
+      ...(ruleSets ? { ruleSets } : {}),
       ...(values.xrechnung ? { xrechnung: true } : {}),
       ...(values["strict-extended"] ? { extended: "strict" as const } : {}),
       ...(values["no-schema"] ? { schema: false } : {}),

@@ -16,7 +16,16 @@ export {
   type PdfInfo,
   readPdf,
 } from "./pdf";
-export { RULE_SETS, type RuleSetId, type RuleSetInfo, ruleSet, ruleSetInfo } from "./rules/index";
+export {
+  RULE_SETS,
+  type RuleSetFamily,
+  type RuleSetId,
+  type RuleSetInfo,
+  type RuleSetInfoOptions,
+  type RuleSetSelector,
+  ruleSet,
+  ruleSetInfo,
+} from "./rules/index";
 export {
   type CompiledRuleSet,
   compileSchematron,

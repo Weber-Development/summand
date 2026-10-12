@@ -25,8 +25,10 @@ npx @sweberdev/summand validate invoices/*.xml invoices/*.pdf
 ## Features
 
 - Official rule sets: EN 16931 validation artefacts 1.3.16 (UBL and CII) and XRechnung Schematron 2.6.0 (XRechnung 3.0), with the severity levels of the KoSIT validator configuration
+- Choose rule sets and versions with `ruleSets: ["en16931", "xrechnung@2.5.0"]` (CLI `--rule-sets`); XRechnung Schematron 2.5.0 is bundled next to 2.6.0
 - `summand rules` lists the bundled rule sets with version, source, licence and rule count; `summand rules --check` asks whether newer releases exist (downloads nothing)
 - Large invoices: 1,000 lines validate in under a second in Node on our test machine (see the performance guide for numbers and method)
+- `validateMany` (`@sweberdev/summand/batch`, Node.js): validate folders of invoices with a bounded pool of worker threads, results streamed in input order
 - XML Schema (XSD) validation against UBL 2.1 and UN/CEFACT CII D16B: unknown, missing, misplaced or repeated elements, attributes, dates and numbers (`SUM-XSD`, switch off with `schema: false`)
 - UBL Invoice, UBL Credit Note and UN/CEFACT CII
 - ZUGFeRD / Factur-X PDFs: embedded XML is found and validated, XMP profile compared
