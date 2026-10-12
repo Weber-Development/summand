@@ -1,0 +1,8 @@
+{
+  "mode": "pre",
+  "tag": "next",
+  "initialVersions": {
+    "@sweberdev/summand": "1.1.0"
+  },
+  "changesets": []
+}

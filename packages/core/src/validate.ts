@@ -307,6 +307,23 @@ export function validateInvoice(
     infos: [],
   };
 
+  if ("xrechnung" in options) {
+    // Removed in 2.0. Ignoring it silently would run fewer rules than the caller asked for.
+    const text =
+      'The option xrechnung was removed in 2.0.0. Use ruleSets, for example ruleSets: ["en16931", "xrechnung"].';
+    base.errors.push(
+      summandMessage(
+        "SUM-RULESET",
+        "error",
+        tr(
+          text,
+          'Die Option xrechnung wurde in 2.0.0 entfernt. Nutzen Sie ruleSets, zum Beispiel ruleSets: ["en16931", "xrechnung"].',
+        ),
+      ),
+    );
+    return finish(base, started);
+  }
+
   if (Array.isArray(options.ruleSets)) {
     // Selectors do not depend on the document, so a wrong one is reported before anything else.
     const checked = resolveRuleSets(options.ruleSets, "ubl");

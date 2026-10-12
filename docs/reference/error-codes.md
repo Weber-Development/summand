@@ -30,7 +30,7 @@ The field is called `id`, as in 1.x; it was not renamed to `code`. `location`, `
 | [`SUM-EXTENDED`](#sum-extended) | info | EXTENDED violations were reported as warnings |
 | [`SUM-LEITWEG`](#sum-leitweg) | warning | The Leitweg-ID has wrong check digits |
 | [`SUM-PDF-LEVEL`](#sum-pdf-level) | warning | The PDF metadata declares a different profile than the XML |
-| [`SUM-RULESET`](#sum-ruleset) | error | `ruleSets` names a rule set or version that is not bundled |
+| [`SUM-RULESET`](#sum-ruleset) | error | `ruleSets` names a rule set or version that is not bundled, or the removed `xrechnung` option is passed |
 | [`SUM-BATCH`](#sum-batch) | error | `validateMany` could not process an input (not a verdict about the invoice) |
 
 When validation stops early (`SUM-XML`, `SUM-FORMAT`, `SUM-PDF`, `SUM-RULESET`), the result has that one error and no `syntax`, `profile`, `summary` or `schemas`. `SUM-RULESET` does not depend on the document: it is reported for every input, before the document is read.
@@ -133,7 +133,7 @@ Severity: error. No `line`, no `location`. Validation stops before the document 
 
 **Meaning.** An entry of the `ruleSets` option (CLI: `--rule-sets`) is not a bundled rule set, or names a version that is not bundled. The message lists what is known. No rule set ran, so the result says nothing about the invoice.
 
-**Causes.** A typo ("xrechung"), a version that was never bundled or was removed ("xrechnung@2.4.0"), a version of another rule set ("en16931@2.6.0"), an empty version ("xrechnung@"), or a config file written for a newer Summand version than the installed one.
+**Causes.** The removed `xrechnung` option is still passed (removed in 2.0.0, use `ruleSets`), a typo ("xrechung"), a version that was never bundled or was removed ("xrechnung@2.4.0"), a version of another rule set ("en16931@2.6.0"), an empty version ("xrechnung@"), or a config file written for a newer Summand version than the installed one.
 
 **Fix.** Use `en16931` or `xrechnung`, optionally with `@` and one of the versions `ruleSetInfo({ versions: "all" })` (CLI: `summand rules`) lists. See [Rule sets and versions](../guides/rule-sets.md#selecting-rule-sets-and-versions). The CLI treats the same mistake as a usage error (exit code 2) before it reads any file.
 

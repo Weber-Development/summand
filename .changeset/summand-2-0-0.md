@@ -7,7 +7,7 @@ Summand 2.0.0 removes what 1.x deprecated and requires Node.js 22. It adds no ru
 **Breaking changes**
 
 - **Node.js 22 or newer is required** (`engines.node` is `>=22`; 1.x supported 20). CI runs the full suite on Node.js 22 and 24.
-- **Removed: the option `xrechnung` and the CLI flag `--xrechnung`.** Use `ruleSets: ["en16931", "xrechnung"]` and `--rule-sets en16931,xrechnung`; the results are identical. `summand validate --xrechnung` is now a usage error (exit code 2). Careful in plain JavaScript: an `xrechnung: true` that is still in your code is ignored without a message and the invoice is then validated with the `"auto"` rule sets, which are fewer rules for an invoice that does not declare XRechnung. TypeScript reports it at compile time.
+- **Removed: the option `xrechnung` and the CLI flag `--xrechnung`.** Use `ruleSets: ["en16931", "xrechnung"]` and `--rule-sets en16931,xrechnung`; the results are identical. `summand validate --xrechnung` is now a usage error (exit code 2). In plain JavaScript a leftover `xrechnung` option makes `validateInvoice` return the error `SUM-RULESET` instead of validating with fewer rules; TypeScript reports it at compile time.
 - **Removed: the info `SUM-DEPRECATED`.** Nothing emits it any more, so `result.infos` no longer carries the extra entry. The id is not reused.
 - **Removed: the type `CheckOptions`** of `@sweberdev/summand/rules-check`. Use `RuleSetCheckOptions`, the same type.
 - **Changed: `ruleSetsFor(detection)` takes only the detection** (the second argument existed for `xrechnung`).

@@ -185,7 +185,7 @@ describe("ruleSets option", () => {
 });
 
 describe("removed option xrechnung (2.0.0)", () => {
-  it("is ignored by the library; ruleSets selects XRechnung on any invoice", () => {
+  it("is refused by the library; ruleSets selects XRechnung on any invoice", () => {
     const plain = ubl.replace(
       /<cbc:CustomizationID>[^<]*</,
       "<cbc:CustomizationID>urn:cen.eu:en16931:2017<",
@@ -195,10 +195,10 @@ describe("removed option xrechnung (2.0.0)", () => {
       "en16931-ubl@1.3.16",
       "xrechnung-ubl@2.6.0",
     ]);
-    // A JavaScript caller that still passes it gets the default rule sets and no note.
+    // A JavaScript caller that still passes it gets an error, not fewer rules.
     const legacy = validateInvoice(plain, { xrechnung: true } as never);
-    expect(applied(legacy)).toEqual(["en16931-ubl@1.3.16"]);
-    expect(legacy.infos.map((i) => i.id)).not.toContain("SUM-DEPRECATED");
+    expect(legacy.valid).toBe(false);
+    expect(legacy.errors.map((e) => e.id)).toEqual(["SUM-RULESET"]);
   });
 });
 

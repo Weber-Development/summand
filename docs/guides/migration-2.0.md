@@ -49,7 +49,7 @@ summand validate --rule-sets en16931,xrechnung invoice.xml
 
 A test in 1.1 showed that both forms give identical results, including for profiles that are not EN 16931 compliant (MINIMUM, BASIC WL), where neither form applies a rule set.
 
-**JavaScript callers, read this.** The library does not check option names at run time. In 2.0 an `xrechnung: true` that is still in your JavaScript code is ignored without a message, and the invoice is validated with the `"auto"` rule sets, which means **fewer rules than before** for an invoice that does not declare XRechnung. Search your code for `xrechnung:` before you upgrade; TypeScript users get a compile error. The CLI is stricter: an unknown flag such as `--xrechnung` is a usage error with exit code 2 and nothing is validated.
+**JavaScript callers.** The library checks the removed option at run time: `validateInvoice` returns the error `SUM-RULESET` ("The option xrechnung was removed in 2.0.0") instead of running with fewer rules, so a forgotten `xrechnung: true` cannot silently weaken a check. TypeScript users get a compile error. The CLI treats `--xrechnung` as a usage error with exit code 2 and nothing is validated.
 
 ## Removed: `SUM-DEPRECATED`
 

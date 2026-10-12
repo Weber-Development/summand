@@ -180,3 +180,12 @@ describe("message contract (2.0)", () => {
     expect(seen).toBeGreaterThan(3);
   });
 });
+
+describe("removed xrechnung option", () => {
+  it("is reported as SUM-RULESET instead of being ignored", () => {
+    const result = validateInvoice("<x/>", { xrechnung: true } as never);
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]?.id).toBe("SUM-RULESET");
+    expect(result.errors[0]?.message).toContain("removed in 2.0.0");
+  });
+});
