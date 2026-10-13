@@ -54,7 +54,7 @@ https://packages.sweber.dev/summand/docs · Demo: https://packages.sweber.dev/su
 
 ## Pro
 
-Summand Pro reads invoices into typed objects, renders them as readable HTML with the validation report, and validates whole inboxes with reports, duplicate detection and an audit trail: https://packages.sweber.dev/summand
+Summand Pro builds on this validator for teams that process invoices every day: read any invoice into a typed object, write XRechnung and ZUGFeRD in all profiles, validate and watch whole inboxes, an approval workflow and a tamper-evident archive (beta), webhooks and mail notifications (beta), and a validation service you run as a Docker container with a REST API for stacks that are not Node.js. Details and prices: https://packages.sweber.dev/summand
 
 ## Licence
 
@@ -66,7 +66,8 @@ MIT for Summand's code. The bundled rule sets and schemas keep their licences (E
 Need more than the free package? **Summand Pro** adds:
 
 - Read: XRechnung, ZUGFeRD and Factur-X into one typed Invoice object
-- Write: generate valid XRechnung and ZUGFeRD / Factur-X, checked before it returns
-- View, inbox and match: readable HTML / PDF, mailbox watching with DATEV export, purchase-order matching
+- Write: generate valid XRechnung and ZUGFeRD / Factur-X in all profiles, credit notes, partial and final invoices, checked before it returns
+- View, inbox and match: readable HTML / PDF, mailbox watching with DATEV export, approval workflow and archive, purchase-order matching
+- Validation service: a Docker image with a REST API, for PHP, Java, .NET, Python and every other stack
 
 Subscriptions from CHF 19 per month, or a one-time lifetime licence. [See what is included](https://packages.sweber.dev/summand?utm_source=npm&utm_medium=readme&utm_campaign=pro)
