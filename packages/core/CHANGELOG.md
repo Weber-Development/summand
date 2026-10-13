@@ -1,5 +1,11 @@
 # @sweberdev/summand
 
+## 2.0.1
+
+### Patch Changes
+
+- 4008c30: Documentation and CLI help only: the README and `summand --help` now point to Summand Pro. Nothing in the library, the rules or the results changed, and the library prints nothing about Pro.
+
 ## 2.0.0
 
 ### Major Changes
