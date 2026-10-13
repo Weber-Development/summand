@@ -59,3 +59,14 @@ Summand Pro reads invoices into typed objects, renders them as readable HTML wit
 ## Licence
 
 MIT for Summand's code. The bundled rule sets and schemas keep their licences (EN 16931 artefacts: EUPL-1.2, XRechnung Schematron: Apache-2.0, UBL schemas: OASIS, CII schemas: UN/CEFACT), see [NOTICE.md](NOTICE.md).
+
+<!-- pro-promo -->
+## Summand Pro
+
+Need more than the free package? **Summand Pro** adds:
+
+- Read: XRechnung, ZUGFeRD and Factur-X into one typed Invoice object
+- Write: generate valid XRechnung and ZUGFeRD / Factur-X, checked before it returns
+- View, inbox and match: readable HTML / PDF, mailbox watching with DATEV export, purchase-order matching
+
+Subscriptions from CHF 19 per month, or a one-time lifetime licence. [See what is included](https://packages.sweber.dev/summand?utm_source=npm&utm_medium=readme&utm_campaign=pro)
