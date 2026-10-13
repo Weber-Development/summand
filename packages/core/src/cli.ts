@@ -48,7 +48,9 @@ rules options
   --json                machine-readable output
   --check               ask GitHub whether newer releases of the rule sets exist (sends nothing
                         about your invoices, downloads nothing)
-  --fail-on-outdated    with --check: exit code 3 when a newer release exists`;
+  --fail-on-outdated    with --check: exit code 3 when a newer release exists
+
+Summand Pro (writing invoices, inbox workflow, Docker validation service): https://packages.sweber.dev/summand`;
 
 const defaultIo: CliIo = {
   out: (line) => process.stdout.write(`${line}\n`),
